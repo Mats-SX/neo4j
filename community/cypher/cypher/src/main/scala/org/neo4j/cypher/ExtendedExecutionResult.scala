@@ -19,10 +19,54 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.graphdb.{Notification, QueryExecutionType}
+import java.lang
+
+import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
+import org.neo4j.graphdb._
 
 trait ExtendedExecutionResult extends ExecutionResult {
   def planDescriptionRequested: Boolean
   def executionType: QueryExecutionType
   def notifications: Iterable[Notification]
+  def accept(visitor: ResultVisitor): Unit = {
+    val row = new MapResultRow()
+    var continue = true
+    while (continue && hasNext) {
+      row.map = next()
+      continue = visitor.visit(row)
+    }
+  }
+
+}
+
+class MapResultRow extends ResultRow {
+
+  def getWithType[T](key:String, clazz:Class[T]): T = {
+    map.get(key) match {
+      case None => throw new IllegalArgumentException( "No column \"" + key + "\" exists" )
+      case Some(value) => try {
+        value.asInstanceOf[T]
+      } catch {
+        case e: ClassCastException =>
+          throw new NoSuchElementException("The current item in column \"" + key + "\" is not a " + clazz.getSimpleName)
+      }
+    }
+  }
+
+
+    var map: Map[String, Any] = Map.empty
+
+  override def getNode(key: String): Node = getWithType(key, classOf[Node])
+
+  override def getRelationship(key: String): Relationship = getWithType(key, classOf[Relationship])
+
+  override def get(key: String): Object = getWithType(key, classOf[Object])
+
+  override def getNumber(key: String): Number = getWithType(key, classOf[Number])
+
+  override def getBoolean(key: String): lang.Boolean = getWithType(key, classOf[Boolean])
+
+  override def getPath(key: String): Path = getWithType(key, classOf[Path])
+
+  override def getString(key: String): String = getWithType(key, classOf[String])
 }

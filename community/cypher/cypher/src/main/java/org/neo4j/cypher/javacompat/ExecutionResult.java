@@ -286,11 +286,12 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     @Override
     public void accept( ResultVisitor visitor )
     {
-        final MapResultRow row = new MapResultRow();
-        for ( boolean cont = true; cont && iter.hasNext(); cont = visitor.visit( row ) )
-        {
-            row.setMap( iter.next() );
-        }
+        inner.accept(visitor);
+//        final MapResultRow row = new MapResultRow();
+//        for ( boolean cont = true; cont && iter.hasNext(); cont = visitor.visit( row ) )
+//        {
+//            row.setMap( iter.next() );
+//        }
     }
 
     @Override
@@ -364,81 +365,5 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     private static QueryExecutionException converted( CypherException e )
     {
         return new QueryExecutionKernelException( e ).asUserException();
-    }
-
-    private static class MapResultRow implements ResultRow
-    {
-        private Map<String, Object> map;
-
-        private <T> T get( String key, Class<T> type )
-        {
-            Object value = map.get( key );
-            if ( value == null && !map.containsKey( key ) )
-            {
-                throw new IllegalArgumentException( "No column \"" + key + "\" exists" );
-            }
-            try
-            {
-                return type.cast( value );
-            }
-            catch ( ClassCastException e )
-            {
-                throw new NoSuchElementException( "The current item in column \"" + key + "\" is not a " +
-                        type.getSimpleName() );
-            }
-        }
-
-        @Override
-        public Object get( String key )
-        {
-            return get( key, Object.class );
-        }
-
-        @Override
-        public Node getNode( String key )
-        {
-            return get( key, Node.class );
-        }
-
-        @Override
-        public Relationship getRelationship( String key )
-        {
-            return get( key, Relationship.class );
-        }
-
-        @Override
-        public String getString( String key )
-        {
-            return get( key, String.class );
-        }
-
-        @Override
-        public Long getLong( String key )
-        {
-            return get( key, Long.class );
-        }
-
-        @Override
-        public Double getDouble( String key )
-        {
-            return get( key, Double.class );
-        }
-
-        @Override
-        public Boolean getBoolean( String key )
-        {
-            return get( key, Boolean.class );
-        }
-
-        @Override
-        public Path getPath( String key )
-        {
-            return get( key, Path.class );
-        }
-
-        public void setMap( Map<String, Object> map )
-        {
-            this.map = map;
-        }
     }
 }

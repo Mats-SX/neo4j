@@ -217,9 +217,7 @@ public interface Result extends ResourceIterator<Map<String, Object>>
 
         String getString( String key );
 
-        Long getLong( String key );
-
-        Double getDouble( String key );
+        Number getNumber( String key );
 
         Boolean getBoolean( String key );
 
