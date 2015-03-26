@@ -28,6 +28,7 @@ trait ExtendedExecutionResult extends ExecutionResult {
   def planDescriptionRequested: Boolean
   def executionType: QueryExecutionType
   def notifications: Iterable[Notification]
+
   def accept(visitor: ResultVisitor): Unit = {
     val row = new MapResultRow()
     var continue = true
@@ -39,22 +40,9 @@ trait ExtendedExecutionResult extends ExecutionResult {
 
 }
 
-class MapResultRow extends ResultRow {
+private class MapResultRow extends ResultRow {
 
-  def getWithType[T](key:String, clazz:Class[T]): T = {
-    map.get(key) match {
-      case None => throw new IllegalArgumentException( "No column \"" + key + "\" exists" )
-      case Some(value) => try {
-        value.asInstanceOf[T]
-      } catch {
-        case e: ClassCastException =>
-          throw new NoSuchElementException("The current item in column \"" + key + "\" is not a " + clazz.getSimpleName)
-      }
-    }
-  }
-
-
-    var map: Map[String, Any] = Map.empty
+  var map: Map[String, Any] = Map.empty
 
   override def getNode(key: String): Node = getWithType(key, classOf[Node])
 
@@ -69,4 +57,15 @@ class MapResultRow extends ResultRow {
   override def getPath(key: String): Path = getWithType(key, classOf[Path])
 
   override def getString(key: String): String = getWithType(key, classOf[String])
+
+  private def getWithType[T](key: String, clazz: Class[T]): T = {
+    map.get(key) match {
+      case None =>
+        throw new IllegalArgumentException("No column \"" + key + "\" exists")
+      case Some(value) if clazz.isInstance(value) || value == null =>
+        clazz.cast(value)
+      case _ =>
+        throw new NoSuchElementException("The current item in column \"" + key + "\" is not a " + clazz.getSimpleName)
+    }
+  }
 }
