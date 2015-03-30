@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ReadsRelationships, ReadsNodes, Effects}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{InternalPlanDescription, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.{SymbolTable, SymbolTypeAssertionCompiler, _}
@@ -48,9 +48,9 @@ case class ArgumentPipe(symbols: SymbolTable)
   def exists(pred: (Pipe) => Boolean) = pred(this)
 
   override def localEffects: Effects =
-    symbols.identifiers.values.foldLeft(NONE) {
-      case (acc, _: NodeType)         => acc | READS_NODES
-      case (acc, _: RelationshipType) => acc | READS_RELATIONSHIPS
+    symbols.identifiers.values.foldLeft(Effects()) {
+      case (acc, _: NodeType)         => acc | Effects(ReadsNodes)
+      case (acc, _: RelationshipType) => acc | Effects(ReadsRelationships)
       case (acc, _)                   => acc
     }
 }

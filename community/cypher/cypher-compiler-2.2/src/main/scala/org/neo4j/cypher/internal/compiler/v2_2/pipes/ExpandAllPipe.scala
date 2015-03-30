@@ -63,7 +63,7 @@ case class ExpandAllPipe(source: Pipe,
 
   val symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 
-  override def localEffects = Effects.READS_ENTITIES
+  override def localEffects = Effects.READ_EFFECTS
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

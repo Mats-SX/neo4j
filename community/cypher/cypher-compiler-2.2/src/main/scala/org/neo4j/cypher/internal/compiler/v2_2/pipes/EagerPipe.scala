@@ -32,9 +32,9 @@ case class EagerPipe(src: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeW
     input.toList.toIterator
 
   // reset effects to NONE by loading all input data in memory
-  override val localEffects = Effects.NONE
+  override val localEffects = Effects()
 
-  override val effects = Effects.NONE
+  override val effects = Effects()
 
   def dup(sources: List[Pipe]): Pipe = {
     val (src :: Nil) = sources

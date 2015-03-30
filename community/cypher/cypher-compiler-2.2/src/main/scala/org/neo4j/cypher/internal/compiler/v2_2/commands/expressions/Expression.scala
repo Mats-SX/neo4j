@@ -74,7 +74,7 @@ abstract class Expression extends Typed with TypeSafe with EffectfulAstNode[Expr
     case _          => getClass.getSimpleName
   }
 
-  def localEffects = Effects.NONE
+  def localEffects = Effects()
 
   val isDeterministic = ! exists {
     case RandFunction() => true

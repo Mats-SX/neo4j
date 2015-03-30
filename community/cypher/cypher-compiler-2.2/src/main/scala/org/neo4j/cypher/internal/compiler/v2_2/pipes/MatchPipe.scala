@@ -46,7 +46,7 @@ case class MatchPipe(source: Pipe,
     }
   }
 
-  override def localEffects = Effects.READS_ENTITIES
+  override def localEffects = Effects.READ_EFFECTS
 
   override def planDescription =
     source.planDescription.andThen(this, matchingContext.builder.name, identifiers)

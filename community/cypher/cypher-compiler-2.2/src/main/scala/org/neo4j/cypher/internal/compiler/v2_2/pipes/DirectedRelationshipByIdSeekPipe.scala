@@ -63,7 +63,7 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityById
 
   def sources: Seq[Pipe] = Seq.empty
 
-  override def localEffects = Effects.READS_ENTITIES
+  override def localEffects = Effects.READ_EFFECTS
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

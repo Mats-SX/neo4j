@@ -52,7 +52,7 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityBy
     this
   }
 
-  override def localEffects = Effects.READS_ENTITIES
+  override def localEffects = Effects.READ_EFFECTS
 
   def sources: Seq[Pipe] = Seq.empty
 

@@ -23,9 +23,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.pipes.{EagerPipe, Pipe}
 
 object addEagernessIfNecessary extends (Pipe => Pipe) {
   def wouldInterfere(from: Effects, to: Effects): Boolean = {
-    val nodesInterfere = from.contains(Effects.READS_NODES) && to.contains(Effects.WRITES_NODES)
-    val relsInterfere = from.contains(Effects.READS_RELATIONSHIPS) && to.contains(Effects.WRITES_RELATIONSHIPS)
-    nodesInterfere || relsInterfere
+    val nodesInterfere = from.contains(ReadsNodes) && to.contains(WritesNodes)
+    val relsInterfere = from.contains(ReadsRelationships) && to.contains(WritesRelationships)
+
+    nodesInterfere || relsInterfere || propertiesInterfere(from, to) || labelsInterfere(from, to)
   }
 
   def apply(toPipe: Pipe): Pipe = {
@@ -39,5 +40,37 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
       }
     }
     toPipe.dup(sources.toList)
+  }
+
+  private def propertiesInterfere(from: Effects, to: Effects): Boolean = {
+    val readMap: Map[String, ReadsProperty] = from.effectsSet.collect {
+      case property@ReadsProperty(_) => property
+    }.map(x => (x.propertyName, x)).toMap
+
+    val writes = to.effectsSet.collect {
+      case property@WritesProperty(_) => property
+    }
+
+    val propertiesInterfere =
+      (readMap.contains("") && writes.nonEmpty) ||
+        (writes.contains(WritesProperty("")) && readMap.nonEmpty) ||
+        writes.exists(x => readMap.contains(x.propertyName))
+    propertiesInterfere
+  }
+
+  private def labelsInterfere(from: Effects, to: Effects): Boolean = {
+    val readMap: Map[String, ReadsLabel] = from.effectsSet.collect {
+      case label@ReadsLabel(_) => label
+    }.map(x => (x.labelName, x)).toMap
+
+    val writes = to.effectsSet.collect {
+      case label@WritesLabel(_) => label
+    }
+
+    val propertiesInterfere =
+      (readMap.contains("") && writes.nonEmpty) ||
+        (writes.contains(WritesLabel("")) && readMap.nonEmpty) ||
+        writes.exists(x => readMap.contains(x.labelName))
+    propertiesInterfere
   }
 }

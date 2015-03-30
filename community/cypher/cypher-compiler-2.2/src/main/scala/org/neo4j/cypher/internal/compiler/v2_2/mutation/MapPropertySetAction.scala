@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Identifier, Expression}
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{WritesRelationships, WritesNodes, Effects}
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.{IsMap, MapSupport}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{Operations, QueryContext}
@@ -108,11 +108,11 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression, 
   def localEffects(symbols: SymbolTable) = mapExpression.effects | element.effects | {
     element match {
       case i: Identifier => symbols.identifiers(i.entityName) match {
-        case _: NodeType => Effects.WRITES_NODES
-        case _: RelationshipType => Effects.WRITES_RELATIONSHIPS
-        case _ => Effects.NONE
+        case _: NodeType => Effects(WritesNodes)
+        case _: RelationshipType => Effects(WritesRelationships)
+        case _ => Effects()
       }
-      case _ => Effects.WRITES_ENTITIES
+      case _ => Effects.WRITE_EFFECTS
     }
   }
 

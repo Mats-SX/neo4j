@@ -21,62 +21,104 @@ package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{SortItem, ReturnItem}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v2_2.mutation.{UpdateAction, Effectful}
+import org.neo4j.cypher.internal.compiler.v2_2.mutation.{Effectful, UpdateAction}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 
-case class Effects(value: Int)  {
-  def &(other: Effects): Effects = Effects(other.value & value)
-  def |(other: Effects): Effects = Effects(other.value | value)
+case class Effects(effectsSet: Set[Effect] = Set.empty) {
 
-  def contains(other: Effects): Boolean = (value & other.value) == other.value
-  def intersects(other: Effects): Boolean = (value & other.value) != 0
-  def reads(): Boolean = intersects(Effects.READS_ENTITIES)
-  def writes(): Boolean = intersects(Effects.WRITES_ENTITIES)
+  def &(other: Effects): Effects = Effects(other.effectsSet.intersect(effectsSet))
 
-  override def toString =
-    if (value == 0) "NONE"
-    else {
-      Seq("WRITES_NODES", "WRITES_RELATIONSHIPS", "READS_NODES", "READS_RELATIONSHIPS").zipWithIndex
-        .filter { case (_: String, index: Int) => (value & (2 << index)) != 0}.map(_._1).mkString(" | ")
-    }
+  def |(other: Effects): Effects = Effects(effectsSet ++ other.effectsSet)
+
+  def contains(effect: Effect): Boolean = effectsSet(effect)
+
+  def reads() = effectsSet.exists(_.reads)
+
+  def writes() = effectsSet.exists(_.writes)
+
+
 }
 
 object Effects {
-  val WRITES_NODES = Effects(2 << 0)
-  val WRITES_RELATIONSHIPS = Effects(2 << 1)
-  val READS_NODES = Effects(2 << 2)
-  val READS_RELATIONSHIPS = Effects(2 << 3)
+  val WRITE_EFFECTS = Effects(WritesNodes, WritesRelationships, WritesLabel(""), WritesProperty(""))
+  val READ_EFFECTS = Effects(ReadsNodes, ReadsRelationships, ReadsLabel(""), ReadsProperty(""))
+  val ALL_EFFECTS = WRITE_EFFECTS | READ_EFFECTS
 
-  val NONE = Effects(0)
-  val READS_ENTITIES = READS_NODES | READS_RELATIONSHIPS
-  val WRITES_ENTITIES = WRITES_NODES | WRITES_RELATIONSHIPS
-  val ALL = READS_ENTITIES | WRITES_ENTITIES
+  def apply(effectsSeq: Effect*) : Effects = Effects(effectsSeq.toSet)
 
   implicit class TraversableEffects(iter: Traversable[Effectful]) {
-    def effects: Effects = iter.map(_.effects).reduced
+    def effects: Effects = Effects(iter.flatMap(_.effects.effectsSet).toSet)
   }
 
   implicit class TraversableExpressions(iter: Traversable[Expression]) {
-    def effects: Effects = iter.map(_.effects).reduced
+    def effects: Effects = Effects(iter.flatMap(_.effects.effectsSet).toSet)
   }
 
   implicit class EffectfulReturnItems(iter: Traversable[ReturnItem]) {
-    def effects: Effects = iter.map(_.expression.effects).reduced
+    def effects: Effects = Effects(iter.flatMap(_.expression.effects.effectsSet).toSet)
   }
 
   implicit class EffectfulUpdateAction(commands: Traversable[UpdateAction]) {
-    def effects(symbols: SymbolTable): Effects = commands.map(_.effects(symbols)).reduced
+    def effects(symbols: SymbolTable): Effects = Effects(commands.flatMap(_.effects(symbols).effectsSet).toSet)
   }
 
   implicit class MapEffects(m: Map[_, Expression]) {
-    def effects: Effects = m.values.map(_.effects).reduced
+    def effects: Effects = Effects(m.values.flatMap(_.effects.effectsSet).toSet)
   }
-
   implicit class SortItemEffects(m: Traversable[SortItem]) {
-    def effects: Effects = m.map(_.expression.effects).reduced
-  }
-
-  implicit class ReducedEffects(effects: Traversable[Effects]) {
-    def reduced = effects.reduceOption(_ | _).getOrElse(Effects.NONE)
+    def effects: Effects = Effects(m.flatMap(_.expression.effects.effectsSet).toSet)
   }
 }
+
+trait Effect {
+  def reads: Boolean
+
+  def writes: Boolean
+}
+
+trait ReadEffect extends Effect {
+  override def reads = true
+
+  override def writes = false
+}
+
+trait WriteEffect extends Effect {
+  override def reads = false
+
+  override def writes = true
+}
+
+case object ReadsNodes extends ReadEffect {
+  override def toString = "READ NODES"
+}
+
+case object WritesNodes extends WriteEffect {
+  override def toString = "WRITES NODES"
+}
+
+case object ReadsRelationships extends ReadEffect {
+  override def toString = "READS RELATIONSHIPS"
+}
+
+case object WritesRelationships extends WriteEffect {
+  override def toString = "WRITES RELATIONSHIPS"
+}
+
+case class ReadsProperty(propertyName: String) extends ReadEffect {
+  override def toString = s"READS PROPERTY '$propertyName'"
+}
+
+case class WritesProperty(propertyName: String) extends WriteEffect {
+  override def toString = s"WRITES PROPERTY '$propertyName'"
+}
+
+case class ReadsLabel(labelName: String) extends ReadEffect {
+  override def toString = s"READS LABEL '$labelName'"
+}
+
+case class WritesLabel(labelName: String) extends WriteEffect {
+  override def toString = s"WRITES LABEL '$labelName'"
+}
+
+
+

@@ -52,7 +52,7 @@ case class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Tr
   def planDescription =
     source.planDescription.andThen(this, "TraversalMatcher", identifiers, KeyNames(trail.pathDescription))
 
-  override def localEffects = Effects.READS_ENTITIES
+  override def localEffects = Effects.READ_EFFECTS
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources

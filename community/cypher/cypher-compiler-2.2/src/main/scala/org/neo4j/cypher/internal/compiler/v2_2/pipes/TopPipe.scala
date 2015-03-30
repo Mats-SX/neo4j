@@ -119,8 +119,8 @@ case class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpressio
   def symbols = source.symbols
 
   // the top pipe has no effects since it is at the top
-  override val localEffects = Effects.NONE
-  override val effects = Effects.NONE
+  override val localEffects = Effects()
+  override val effects = Effects()
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources

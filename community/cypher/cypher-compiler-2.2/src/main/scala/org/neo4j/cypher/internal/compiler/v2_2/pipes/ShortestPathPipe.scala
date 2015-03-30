@@ -68,7 +68,7 @@ case class ShortestPathPipe(source: Pipe, ast: ShortestPath)
     copy(source = head)(estimatedCardinality)
   }
 
-  override def localEffects = Effects.READS_ENTITIES
+  override def localEffects = Effects.READ_EFFECTS
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

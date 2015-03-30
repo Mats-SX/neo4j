@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ReadsRelationships, ReadsNodes, Effects}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
@@ -49,7 +49,7 @@ sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe,
 case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProducer[Node])(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends StartPipe[Node](source, name, createSource, pipeMonitor) {
   def identifierType = CTNode
-  override def localEffects = Effects.READS_NODES
+  override def localEffects = Effects(ReadsNodes)
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
@@ -62,7 +62,7 @@ case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProduce
 case class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends StartPipe[Relationship](source, name, createSource, pipeMonitor) {
   def identifierType = CTRelationship
-  override def localEffects = Effects.READS_RELATIONSHIPS
+  override def localEffects = Effects(ReadsRelationships)
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 

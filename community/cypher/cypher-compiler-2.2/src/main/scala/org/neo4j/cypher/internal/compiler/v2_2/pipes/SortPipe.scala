@@ -40,8 +40,8 @@ case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
   def planDescription = source.planDescription.andThen(this, "Sort", identifiers, KeyNames(orderBy.map(_.id)))
 
   // since we load the whole input in memory this Pipe has no effects
-  override val localEffects = Effects.NONE
-  override val effects = Effects.NONE
+  override val localEffects = Effects()
+  override val effects = Effects()
 
   def symbols = source.symbols
 

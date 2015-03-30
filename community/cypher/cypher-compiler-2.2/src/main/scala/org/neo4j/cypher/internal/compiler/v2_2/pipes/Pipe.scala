@@ -96,7 +96,7 @@ case class SingleRowPipe()(implicit val monitor: PipeMonitor) extends Pipe with 
 
   def planDescription: InternalPlanDescription = new SingleRowPlanDescription(this, Seq.empty, identifiers)
 
-  override def localEffects = Effects.NONE
+  override def localEffects = Effects()
 
   def dup(sources: List[Pipe]): Pipe = this
 

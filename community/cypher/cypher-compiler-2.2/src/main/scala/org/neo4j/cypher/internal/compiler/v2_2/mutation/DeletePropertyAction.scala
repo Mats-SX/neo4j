@@ -64,5 +64,5 @@ case class DeletePropertyAction(element: Expression, propertyKey: KeyToken)
 
   def symbolTableDependencies = element.symbolTableDependencies
 
-  def localEffects(symbols: SymbolTable) = Effects.WRITES_ENTITIES
+  def localEffects(symbols: SymbolTable) = Effects.WRITE_EFFECTS
 }

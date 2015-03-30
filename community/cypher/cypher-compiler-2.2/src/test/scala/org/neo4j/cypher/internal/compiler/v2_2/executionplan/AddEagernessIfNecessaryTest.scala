@@ -33,70 +33,82 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
   implicit val monitor = mock[PipeMonitor]
 
   test("NONE -> NONE need no eagerness") {
-    testThatGoingFrom(Effects.NONE)
-    .to(Effects.NONE)
+    testThatGoingFrom(Effects())
+    .to(Effects())
     .doesNotIntroduceEagerness()
   }
 
   test("NONE -> READS need no eagerness") {
-    testThatGoingFrom(Effects.NONE)
-    .to(Effects.READS_ENTITIES)
+    testThatGoingFrom(Effects())
+    .to(Effects.READ_EFFECTS)
     .doesNotIntroduceEagerness()
   }
 
   test("WRITES -> NONE need no eagerness") {
-    testThatGoingFrom(Effects.WRITES_NODES)
-    .to(Effects.NONE)
+    testThatGoingFrom(Effects(WritesNodes))
+    .to(Effects())
     .doesNotIntroduceEagerness()
   }
 
   test("WRITES -> WRITES need no eagerness") {
-    testThatGoingFrom(Effects.WRITES_ENTITIES)
-    .to(Effects.WRITES_ENTITIES)
+    testThatGoingFrom(Effects.WRITE_EFFECTS)
+    .to(Effects.WRITE_EFFECTS)
     .doesNotIntroduceEagerness()
   }
 
   test("READS -> WRITES needs eagerness") {
-    testThatGoingFrom(Effects.READS_ENTITIES)
-    .to(Effects.WRITES_ENTITIES)
+    testThatGoingFrom(Effects.READ_EFFECTS)
+    .to(Effects.WRITE_EFFECTS)
     .doesIntroduceEagerness()
   }
 
   test("WRITES -> READS needs no eagerness") {
-    testThatGoingFrom(Effects.WRITES_ENTITIES)
-    .to(Effects.READS_ENTITIES)
+    testThatGoingFrom(Effects.WRITE_EFFECTS)
+    .to(Effects.READ_EFFECTS)
     .doesNotIntroduceEagerness()
   }
 
   test("READS -> READS needs no eagerness") {
-    testThatGoingFrom(Effects.READS_ENTITIES)
-    .to(Effects.READS_ENTITIES)
+    testThatGoingFrom(Effects.READ_EFFECTS)
+    .to(Effects.READ_EFFECTS)
     .doesNotIntroduceEagerness()
   }
 
   test("READS NODES -> WRITE RELS does not need eagerness") {
-    testThatGoingFrom(Effects.READS_NODES)
-    .to(Effects.WRITES_RELATIONSHIPS)
+    testThatGoingFrom(Effects(ReadsNodes))
+    .to(Effects(WritesRelationships))
     .doesNotIntroduceEagerness()
   }
 
   test("READS ALL -> WRITE RELS needs eagerness") {
-    testThatGoingFrom(Effects.READS_ENTITIES)
-    .to(Effects.WRITES_RELATIONSHIPS)
+    testThatGoingFrom(Effects.READ_EFFECTS)
+    .to(Effects(WritesRelationships))
     .doesIntroduceEagerness()
   }
 
   test("READS RELS -> WRITE NODES needs not eagerness") {
-    testThatGoingFrom(Effects.READS_RELATIONSHIPS)
-    .to(Effects.WRITES_NODES)
+    testThatGoingFrom(Effects(ReadsRelationships))
+    .to(Effects(WritesNodes))
     .doesNotIntroduceEagerness()
   }
 
+  test("READS PROPS -> WRITE PROPS needs eagerness"){
+    testThatGoingFrom(Effects(ReadsProperty("foo")))
+      .to(Effects(WritesProperty("foo")))
+      .doesIntroduceEagerness()
+  }
+
+  test("WRITES PROPS -> READS PROPS does not need eagerness") {
+    testThatGoingFrom(Effects(WritesProperty("foo")))
+      .to(Effects(ReadsProperty("foo")))
+      .doesNotIntroduceEagerness()
+  }
+
   test("NONE -> READS RELS -> WRITE NODES -> NONE needs not eagerness") {
-    val a = FakePipeWithSources("a", List.empty, Effects.NONE)
-    val b = FakePipeWithSources("b", List(a), Effects.READS_RELATIONSHIPS)
-    val c = FakePipeWithSources("c", List(b), Effects.WRITES_NODES)
-    val d = FakePipeWithSources("d", List(c), Effects.NONE)
+    val a = FakePipeWithSources("a", List.empty, Effects())
+    val b = FakePipeWithSources("b", List(a), Effects(ReadsRelationships))
+    val c = FakePipeWithSources("c", List(b), Effects(WritesNodes))
+    val d = FakePipeWithSources("d", List(c), Effects())
 
     val result = addEagernessIfNecessary.apply(d)
 
@@ -104,14 +116,14 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
   }
 
   test("NONE -> READS ALL -> WRITE NODES -> NONE needs eagerness") {
-    val a = FakePipeWithSources("a", List.empty, Effects.NONE)
-    val b = FakePipeWithSources("b", List(a), Effects.READS_ENTITIES)
-    val c = FakePipeWithSources("c", List(b), Effects.WRITES_NODES)
-    val d = FakePipeWithSources("d", List(c), Effects.NONE)
+    val a = FakePipeWithSources("a", List.empty, Effects())
+    val b = FakePipeWithSources("b", List(a), Effects.READ_EFFECTS)
+    val c = FakePipeWithSources("c", List(b), Effects(WritesNodes))
+    val d = FakePipeWithSources("d", List(c), Effects())
 
     val eagerB = EagerPipe(b)
-    val eagerC = FakePipeWithSources("c", List(eagerB), Effects.WRITES_NODES)
-    val eagerD = FakePipeWithSources("d", List(eagerC), Effects.NONE)
+    val eagerC = FakePipeWithSources("c", List(eagerB), Effects(WritesNodes))
+    val eagerD = FakePipeWithSources("d", List(eagerC), Effects())
 
     val result = addEagernessIfNecessary.apply(d)
 
@@ -119,11 +131,11 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
   }
 
   test("mixed bag of pipes that need eager with pipes that do not") {
-    val leaf1 = FakePipeWithSources("l1", List.empty, Effects.READS_NODES)
-    val leaf2 = FakePipeWithSources("l2", List.empty, Effects.READS_RELATIONSHIPS)
-    val parent = FakePipeWithSources("parent", List(leaf1, leaf2), Effects.WRITES_NODES)
+    val leaf1 = FakePipeWithSources("l1", List.empty, Effects(ReadsNodes))
+    val leaf2 = FakePipeWithSources("l2", List.empty, Effects(ReadsRelationships))
+    val parent = FakePipeWithSources("parent", List(leaf1, leaf2), Effects(WritesNodes))
 
-    val expected = FakePipeWithSources("parent", List(EagerPipe(leaf1), leaf2), Effects.WRITES_NODES)
+    val expected = FakePipeWithSources("parent", List(EagerPipe(leaf1), leaf2), Effects(WritesNodes))
 
     val result = addEagernessIfNecessary.apply(parent)
     result should equal(expected)
@@ -137,7 +149,7 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
     verify(pipe).dup(List.empty)
   }
 
-  case class FakePipeWithSources(name:String, sources: List[Pipe], override val localEffects: Effects = Effects.ALL) extends Pipe {
+  case class FakePipeWithSources(name:String, sources: List[Pipe], override val localEffects: Effects = Effects.ALL_EFFECTS) extends Pipe {
     def monitor: PipeMonitor = mock[PipeMonitor]
 
     override def effects: Effects = sources.foldLeft(localEffects)(_ | _.effects)

@@ -96,7 +96,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
 
   def planDescription = source.planDescription.andThen(this, "EagerAggregation", identifiers, Arguments.KeyNames(keyExpressions.toSeq))
 
-  override def effects = Effects.NONE
+  override def effects = Effects()
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

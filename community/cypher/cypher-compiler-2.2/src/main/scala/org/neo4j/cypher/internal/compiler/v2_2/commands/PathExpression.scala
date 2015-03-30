@@ -59,7 +59,7 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate:Predicate=True())
   }
 
 
-  override def localEffects = Effects.READS_ENTITIES
+  override def localEffects = Effects.READ_EFFECTS
 
   override def children = pathPattern :+ predicate
 
