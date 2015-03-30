@@ -43,34 +43,34 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
   }
 
   private def propertiesInterfere(from: Effects, to: Effects): Boolean = {
-    val readMap: Map[String, ReadsProperty] = from.effectsSet.collect {
+    val reads = from.effectsSet.collect {
       case property@ReadsProperty(_) => property
-    }.map(x => (x.propertyName, x)).toMap
+    }
+    val readMap: Map[String, ReadsProperty] = reads.map(x => (x.propertyName, x)).toMap
 
-    val writes = to.effectsSet.collect {
+    val allWrites = to.effectsSet
+    val propertyWrites = allWrites.collect {
       case property@WritesProperty(_) => property
     }
 
-    val propertiesInterfere =
-      (readMap.contains("") && writes.nonEmpty) ||
-        (writes.contains(WritesProperty("")) && readMap.nonEmpty) ||
-        writes.exists(x => readMap.contains(x.propertyName))
-    propertiesInterfere
+    (reads.nonEmpty && allWrites(WritesNodes)) ||
+      (reads(ReadsProperties) && propertyWrites.nonEmpty) ||
+      propertyWrites.exists(x => readMap.contains(x.propertyName))
   }
 
   private def labelsInterfere(from: Effects, to: Effects): Boolean = {
-    val readMap: Map[String, ReadsLabel] = from.effectsSet.collect {
+    val reads = from.effectsSet.collect {
       case label@ReadsLabel(_) => label
-    }.map(x => (x.labelName, x)).toMap
+    }
+    val readMap: Map[String, ReadsLabel] = reads.map(x => (x.labelName, x)).toMap
 
-    val writes = to.effectsSet.collect {
+    val allWrites = to.effectsSet
+    val labelWrites = allWrites.collect {
       case label@WritesLabel(_) => label
     }
 
-    val propertiesInterfere =
-      (readMap.contains("") && writes.nonEmpty) ||
-        (writes.contains(WritesLabel("")) && readMap.nonEmpty) ||
-        writes.exists(x => readMap.contains(x.labelName))
-    propertiesInterfere
+    (reads.nonEmpty && allWrites(WritesNodes)) ||
+      (reads(ReadsLabels) && labelWrites.nonEmpty) ||
+      labelWrites.exists(x => readMap.contains(x.labelName))
   }
 }
