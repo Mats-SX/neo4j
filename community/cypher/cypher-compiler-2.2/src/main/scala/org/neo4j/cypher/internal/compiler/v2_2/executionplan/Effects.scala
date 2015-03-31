@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
-import org.neo4j.cypher.internal.compiler.v2_2.commands.{SortItem, ReturnItem}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{ReturnItem, SortItem}
 import org.neo4j.cypher.internal.compiler.v2_2.mutation.{Effectful, UpdateAction}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 
@@ -35,16 +35,23 @@ case class Effects(effectsSet: Set[Effect] = Set.empty) {
   def reads() = effectsSet.exists(_.reads)
 
   def writes() = effectsSet.exists(_.writes)
+}
 
+object WriteEffects extends Effects(Set(WritesNodes, WritesRelationships, WritesLabels, WritesProperties)) {
+  override def toString = "WRITE EFFECTS"
+}
 
+object ReadEffects extends Effects(Set(ReadsNodes, ReadsRelationships, ReadsLabels, ReadsProperties)) {
+  override def toString = "READ EFFECTS"
+}
+
+object AllEffects extends Effects((WriteEffects | ReadEffects).effectsSet) {
+  override def toString = "ALL EFFECTS"
 }
 
 object Effects {
-  val WRITE_EFFECTS = Effects(WritesNodes, WritesRelationships, WritesLabel(""), WritesProperty(""))
-  val READ_EFFECTS = Effects(ReadsNodes, ReadsRelationships, ReadsLabel(""), ReadsProperty(""))
-  val ALL_EFFECTS = WRITE_EFFECTS | READ_EFFECTS
 
-  def apply(effectsSeq: Effect*) : Effects = Effects(effectsSeq.toSet)
+  def apply(effectsSeq: Effect*): Effects = Effects(effectsSeq.toSet)
 
   implicit class TraversableEffects(iter: Traversable[Effectful]) {
     def effects: Effects = Effects(iter.flatMap(_.effects.effectsSet).toSet)
@@ -65,9 +72,11 @@ object Effects {
   implicit class MapEffects(m: Map[_, Expression]) {
     def effects: Effects = Effects(m.values.flatMap(_.effects.effectsSet).toSet)
   }
+
   implicit class SortItemEffects(m: Traversable[SortItem]) {
     def effects: Effects = Effects(m.flatMap(_.expression.effects.effectsSet).toSet)
   }
+
 }
 
 trait Effect {
@@ -76,13 +85,13 @@ trait Effect {
   def writes: Boolean
 }
 
-trait ReadEffect extends Effect {
+protected trait ReadEffect extends Effect {
   override def reads = true
 
   override def writes = false
 }
 
-trait WriteEffect extends Effect {
+protected trait WriteEffect extends Effect {
   override def reads = false
 
   override def writes = true
@@ -108,17 +117,30 @@ case class ReadsProperty(propertyName: String) extends ReadEffect {
   override def toString = s"READS PROPERTY '$propertyName'"
 }
 
+object ReadsProperties extends ReadsProperty("") {
+  override def toString = "READS PROPERTIES"
+}
+
 case class WritesProperty(propertyName: String) extends WriteEffect {
   override def toString = s"WRITES PROPERTY '$propertyName'"
+}
+
+object WritesProperties extends WritesProperty("") {
+  override def toString = "WRITES PROPERTIES"
 }
 
 case class ReadsLabel(labelName: String) extends ReadEffect {
   override def toString = s"READS LABEL '$labelName'"
 }
 
+object ReadsLabels extends ReadsLabel("") {
+  override def toString = "READS LABELS"
+}
+
 case class WritesLabel(labelName: String) extends WriteEffect {
   override def toString = s"WRITES LABEL '$labelName'"
 }
 
-
-
+object WritesLabels extends WritesLabel("") {
+  override def toString = "WRITES LABELS"
+}

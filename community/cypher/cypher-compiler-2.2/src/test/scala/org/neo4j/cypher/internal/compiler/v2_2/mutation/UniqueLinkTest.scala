@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.mutation
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects._
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{Effects, WritesRelationships, ReadsRelationships}
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{AllEffects, Effects, ReadsRelationships, WritesRelationships}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb.Direction
 
@@ -35,6 +34,6 @@ class UniqueLinkTest extends CypherFunSuite {
   test("given one end, creates nodes and relationships") {
     val link = UniqueLink("a", "b", "r", "X", Direction.OUTGOING)
     val symbols = new SymbolTable(Map("a" -> CTNode))
-    link.effects(symbols) should equal(Effects.ALL_EFFECTS)
+    link.effects(symbols) should equal(AllEffects)
   }
 }

@@ -71,7 +71,7 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
       -> Effects(),
 
     TraversalMatchPipe(SingleRowPipe(), mock[TraversalMatcher], mock[Trail])
-      -> Effects.READ_EFFECTS,
+      -> ReadEffects,
 
     SlicePipe(SingleRowPipe(), Some(Literal(10)), None)
       -> Effects(),
@@ -80,7 +80,7 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
       new FakePipe(Iterator(Map("x" -> null)), "x" -> CTNode), Seq.empty,
       new PatternGraph(Map.empty, Map.empty, Seq.empty, Seq.empty),
       Set("x", "r", "z")
-    ) -> Effects.READ_EFFECTS,
+    ) -> ReadEffects,
 
     EmptyResultPipe(SingleRowPipe())
       -> Effects(),

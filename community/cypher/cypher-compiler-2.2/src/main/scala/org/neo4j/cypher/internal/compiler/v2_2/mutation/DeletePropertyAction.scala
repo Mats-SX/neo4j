@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.mutation
 import org.neo4j.cypher.internal.compiler.v2_2._
 import commands.expressions.Expression
 import commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{WriteEffects, Effects}
 import pipes.QueryState
 import symbols._
 import org.neo4j.graphdb.{Relationship, Node}
@@ -64,5 +64,5 @@ case class DeletePropertyAction(element: Expression, propertyKey: KeyToken)
 
   def symbolTableDependencies = element.symbolTableDependencies
 
-  def localEffects(symbols: SymbolTable) = Effects.WRITE_EFFECTS
+  def localEffects(symbols: SymbolTable) = WriteEffects
 }
