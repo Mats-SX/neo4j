@@ -28,9 +28,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
-trait WritesNodes
-trait WritesRelationships
-
 trait Effectful {
   def effects: Effects
   def localEffects: Effects

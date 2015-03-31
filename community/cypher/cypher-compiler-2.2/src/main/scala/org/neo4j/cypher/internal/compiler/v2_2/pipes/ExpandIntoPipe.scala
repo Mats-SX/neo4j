@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.ReadEffects
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.AllReadEffects
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
@@ -138,7 +138,7 @@ case class ExpandIntoPipe(source: Pipe,
 
   val symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 
-  override def localEffects = ReadEffects
+  override def localEffects = AllReadEffects
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

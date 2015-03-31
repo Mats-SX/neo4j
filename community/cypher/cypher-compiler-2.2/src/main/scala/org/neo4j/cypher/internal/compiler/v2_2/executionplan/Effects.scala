@@ -37,16 +37,16 @@ case class Effects(effectsSet: Set[Effect] = Set.empty) {
   def writes() = effectsSet.exists(_.writes)
 }
 
-object WriteEffects extends Effects(Set(WritesNodes, WritesRelationships, WritesLabels, WritesProperties)) {
-  override def toString = "WRITE EFFECTS"
+object AllWriteEffects extends Effects(Set(WritesNodes, WritesRelationships, WritesAnyLabel, WritesAnyProperty)) {
+  override def toString = "AllWriteEffects"
 }
 
-object ReadEffects extends Effects(Set(ReadsNodes, ReadsRelationships, ReadsLabels, ReadsProperties)) {
-  override def toString = "READ EFFECTS"
+object AllReadEffects extends Effects(Set(ReadsNodes, ReadsRelationships, ReadsAnyLabel, ReadsAnyProperty)) {
+  override def toString = "AllReadEffects"
 }
 
-object AllEffects extends Effects((WriteEffects | ReadEffects).effectsSet) {
-  override def toString = "ALL EFFECTS"
+object AllEffects extends Effects((AllWriteEffects | AllReadEffects).effectsSet) {
+  override def toString = "AllEffects"
 }
 
 object Effects {
@@ -83,6 +83,8 @@ trait Effect {
   def reads: Boolean
 
   def writes: Boolean
+
+  override def toString = this.getClass.getSimpleName
 }
 
 protected trait ReadEffect extends Effect {
@@ -97,50 +99,34 @@ protected trait WriteEffect extends Effect {
   override def writes = true
 }
 
-case object ReadsNodes extends ReadEffect {
-  override def toString = "READ NODES"
-}
+case object ReadsNodes extends ReadEffect
 
-case object WritesNodes extends WriteEffect {
-  override def toString = "WRITES NODES"
-}
+case object WritesNodes extends WriteEffect
 
-case object ReadsRelationships extends ReadEffect {
-  override def toString = "READS RELATIONSHIPS"
-}
+case object ReadsRelationships extends ReadEffect
 
-case object WritesRelationships extends WriteEffect {
-  override def toString = "WRITES RELATIONSHIPS"
-}
+case object WritesRelationships extends WriteEffect
 
 case class ReadsProperty(propertyName: String) extends ReadEffect {
-  override def toString = s"READS PROPERTY '$propertyName'"
+  override def toString = s"${super.toString} '$propertyName'"
 }
 
-object ReadsProperties extends ReadsProperty("") {
-  override def toString = "READS PROPERTIES"
-}
+object ReadsAnyProperty extends ReadsProperty("")
 
 case class WritesProperty(propertyName: String) extends WriteEffect {
-  override def toString = s"WRITES PROPERTY '$propertyName'"
+  override def toString = s"${super.toString} '$propertyName'"
 }
 
-object WritesProperties extends WritesProperty("") {
-  override def toString = "WRITES PROPERTIES"
-}
+object WritesAnyProperty extends WritesProperty("")
 
 case class ReadsLabel(labelName: String) extends ReadEffect {
-  override def toString = s"READS LABEL '$labelName'"
+  override def toString = s"${super.toString} '$labelName'"
 }
 
-object ReadsLabels extends ReadsLabel("") {
-  override def toString = "READS LABELS"
-}
+object ReadsAnyLabel extends ReadsLabel("")
 
 case class WritesLabel(labelName: String) extends WriteEffect {
-  override def toString = s"WRITES LABEL '$labelName'"
+  override def toString = s"${super.toString} '$labelName'"
 }
 
-object WritesLabels extends WritesLabel("") {
-  override def toString = "WRITES LABELS"
-}
+object WritesAnyLabel extends WritesLabel("")

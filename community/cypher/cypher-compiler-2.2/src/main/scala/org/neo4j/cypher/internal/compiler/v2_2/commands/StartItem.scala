@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.commands
 
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions._
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{Effects, ReadsNodes, ReadsRelationships}
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.mutation._
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments
@@ -111,7 +111,7 @@ case class ManyQueryExpression[T](expression: T) extends QueryExpression[T] {
 case class SchemaIndex(identifier: String, label: String, property: String, kind: SchemaIndexKind, query: Option[QueryExpression[Expression]])
   extends StartItem(identifier, query.map(q => Arguments.LegacyExpression(q.expression)).toSeq :+ Arguments.Index(label, property))
   with ReadOnlyStartItem with Hint with NodeStartItemIdentifiers {
-  override def localEffects = Effects(ReadsNodes)
+  override def localEffects = Effects(ReadsLabel(label), ReadsProperty(property))
 }
 
 case class NodeById(varName: String, expression: Expression)
@@ -129,7 +129,7 @@ case class NodeByIdOrEmpty(varName: String, expression: Expression)
 case class NodeByLabel(varName: String, label: String)
   extends StartItem(varName, Seq(Arguments.LabelName(label)))
   with ReadOnlyStartItem with Hint with NodeStartItemIdentifiers {
-  override def localEffects = Effects(ReadsNodes)
+  override def localEffects = Effects(ReadsLabel(label))
 }
 
 case class AllNodes(columnName: String) extends StartItem(columnName, Seq.empty)
@@ -139,7 +139,7 @@ case class AllNodes(columnName: String) extends StartItem(columnName, Seq.empty)
 
 case class AllRelationships(columnName: String) extends StartItem(columnName, Seq.empty)
   with ReadOnlyStartItem with RelationshipStartItemIdentifiers {
-  override def localEffects = Effects(ReadsNodes)
+  override def localEffects = Effects(ReadsRelationships)
 }
 
 case class LoadCSV(withHeaders: Boolean, url: Expression, identifier: String, fieldTerminator: Option[String]) extends StartItem(identifier, Seq.empty)

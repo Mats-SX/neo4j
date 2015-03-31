@@ -54,8 +54,14 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite {
     assertNumberOfEagerness(query, 0)
   }
 
-  test("should introduce eagerness when the ON MATCH includes writing to a node") {
+  test("should not introduce eagerness when the ON MATCH includes writing to a non-matched property") {
     val query = "MATCH (a:Foo), (b:Bar) MERGE (a)-[r:KNOWS]->(b) ON MATCH SET a.prop = 42"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("should introduce eagerness when the ON MATCH includes writing to a matched label") {
+    val query = "MATCH (a:Foo), (b:Bar) MERGE (a)-[r:KNOWS]->(b) ON MATCH SET b:Foo"
 
     assertNumberOfEagerness(query, 1)
   }
@@ -89,14 +95,89 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite {
     assertNumberOfEagerness(query, 0)
   }
 
-  test("should add eagerness when reading and merging nodes and relationships") {
+  test("should not add eagerness when reading and merging nodes and relationships when matching different label") {
     val query = "MATCH (a:A) MERGE (a)-[:BAR]->(b:B) WITH a MATCH (a) WHERE (a)-[:FOO]->() RETURN a"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("should add eagerness when reading and merging nodes and relationships on matching same label") {
+    val query = "MATCH (a:A) MERGE (a)-[:BAR]->(b:A) WITH a MATCH (a) WHERE (a)-[:FOO]->() RETURN a"
 
     assertNumberOfEagerness(query, 1)
   }
 
   test("should not add eagerness when reading nodes and merging relationships") {
     val query = "MATCH (a:A), (b:B) MERGE (a)-[:BAR]->(b) WITH a MATCH (a) WHERE (a)-[:FOO]->() RETURN a"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property and writing different property should not be eager") {
+    val query = "MATCH (n:Node {prop:5}) SET n.value = 10"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching label and writing different label should not be eager") {
+    val query = "MATCH (n:Node) SET n:Lol"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching label and writing same label should be eager") {
+    val query = "MATCH (n:Lol) SET n:Lol"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property and writing label should not be eager") {
+    val query = "MATCH (n {name : 'thing'}) SET n:Lol"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching label and writing property should not be eager") {
+    val query = "MATCH (n:Lol) SET n.name = 'thing'"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property and writing property should be eager") {
+    val query = "MATCH (n:Node {prop:5}) SET n.prop = 10"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property via index and writing same property should be eager"){
+    execute("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")
+    execute("CREATE (b:Book {isbn : '123'})")
+
+    val query = "MATCH (b :Book {isbn : '123'}) SET b.isbn = '456'"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using AND and writing to same property should be eager") {
+    val query = "MATCH n WHERE n.prop1 = 10 AND n.prop2 = 10 SET n.prop1 = 5"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using AND and writing to different property should not be eager") {
+    val query = "MATCH n WHERE n.prop1 = 10 AND n.prop2 = 10 SET n.prop3 = 5"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property using LARGER THAN and writing to same property should be eager") {
+    val query = "MATCH n WHERE n.prop1 > 10 SET n.prop1 = 5"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using LARGER THAN and writing to different property should not be eager") {
+    val query = "MATCH n WHERE n.prop1 > 10 SET n.prop2 = 5"
 
     assertNumberOfEagerness(query, 0)
   }

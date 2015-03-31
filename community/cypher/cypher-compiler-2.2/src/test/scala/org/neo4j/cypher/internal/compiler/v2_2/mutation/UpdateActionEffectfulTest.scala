@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementCon
 import org.neo4j.cypher.internal.compiler.v2_2.commands.Query
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Identifier, Literal, Property}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{WritesLabel, WritesNodes, ReadsNodes, Effects}
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.symbols
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 
@@ -36,7 +36,7 @@ class UpdateActionEffectfulTest extends CypherFunSuite {
     val inner = PropertySetAction(Property(Identifier("a"), PropertyKey("x")), Literal(1))
     val given = MergeNodeAction("a", Map.empty, Seq.empty, Seq.empty, Seq(inner), Seq.empty, None)
 
-    given.effects(SymbolTable()) should equal(Effects(ReadsNodes, WritesNodes))
+    given.effects(SymbolTable()) should equal(Effects(ReadsNodes, WritesNodes, WritesProperty("x")))
   }
 
   test("Updates symbol table correctly when computing effects of MergeNodeAction inside Foreach") {
@@ -44,7 +44,7 @@ class UpdateActionEffectfulTest extends CypherFunSuite {
     val merge = MergeNodeAction("a", Map.empty, Seq.empty, Seq.empty, Seq(inner), Seq.empty, None)
     val given = ForeachAction(Literal(Seq.empty), "k", Seq(merge))
 
-    given.effects(SymbolTable()) should equal(Effects(ReadsNodes, WritesNodes))
+    given.effects(SymbolTable()) should equal(Effects(ReadsNodes, WritesNodes, WritesProperty("x")))
   }
 
   test("Updates symbol table correctly when computing effects of CreateNode and PropertySetAction inside Foreach") {
@@ -52,7 +52,7 @@ class UpdateActionEffectfulTest extends CypherFunSuite {
     val create = CreateNode("a", Map.empty, Seq.empty)
     val given = ForeachAction(Literal(Seq.empty), "k", Seq(create, propertySet))
 
-    given.effects(SymbolTable()) should equal(Effects(WritesNodes))
+    given.effects(SymbolTable()) should equal(Effects(WritesNodes, WritesProperty("x")))
   }
 
   test("MATCH (a) SET a:Foo RETURN a") {

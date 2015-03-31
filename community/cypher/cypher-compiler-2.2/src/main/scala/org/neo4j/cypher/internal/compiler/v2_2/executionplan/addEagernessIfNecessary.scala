@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{EagerPipe, Pipe}
 
 object addEagernessIfNecessary extends (Pipe => Pipe) {
-  def wouldInterfere(from: Effects, to: Effects): Boolean = {
+  private def wouldInterfere(from: Effects, to: Effects): Boolean = {
     val nodesInterfere = from.contains(ReadsNodes) && to.contains(WritesNodes)
     val relsInterfere = from.contains(ReadsRelationships) && to.contains(WritesRelationships)
 
@@ -33,7 +33,9 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
     val sources = toPipe.sources.map(apply).map { fromPipe =>
       val from = fromPipe.effects
       val to = toPipe.localEffects
+      println(s"pipe = ${fromPipe.planDescription.name} from = $from\n toPipe = ${toPipe.planDescription.name} to = $to")
       if (wouldInterfere(from, to)) {
+        println("----- eagerness inserted")
         new EagerPipe(fromPipe)(fromPipe.monitor)
       } else {
         fromPipe
@@ -43,34 +45,30 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
   }
 
   private def propertiesInterfere(from: Effects, to: Effects): Boolean = {
-    val reads = from.effectsSet.collect {
+    val propertyReads = from.effectsSet.collect {
       case property@ReadsProperty(_) => property
     }
-    val readMap: Map[String, ReadsProperty] = reads.map(x => (x.propertyName, x)).toMap
 
-    val allWrites = to.effectsSet
-    val propertyWrites = allWrites.collect {
+    val propertyWrites = to.effectsSet.collect {
       case property@WritesProperty(_) => property
     }
 
-    (reads.nonEmpty && allWrites(WritesNodes)) ||
-      (reads(ReadsProperties) && propertyWrites.nonEmpty) ||
-      propertyWrites.exists(x => readMap.contains(x.propertyName))
+    (propertyReads.nonEmpty && propertyWrites(WritesAnyProperty)) ||
+      (propertyReads(ReadsAnyProperty) && propertyWrites.nonEmpty) ||
+      propertyWrites.exists(x => propertyReads(ReadsProperty(x.propertyName)))
   }
 
   private def labelsInterfere(from: Effects, to: Effects): Boolean = {
-    val reads = from.effectsSet.collect {
+    val labelReads = from.effectsSet.collect {
       case label@ReadsLabel(_) => label
     }
-    val readMap: Map[String, ReadsLabel] = reads.map(x => (x.labelName, x)).toMap
 
-    val allWrites = to.effectsSet
-    val labelWrites = allWrites.collect {
+    val labelWrites = to.effectsSet.collect {
       case label@WritesLabel(_) => label
     }
 
-    (reads.nonEmpty && allWrites(WritesNodes)) ||
-      (reads(ReadsLabels) && labelWrites.nonEmpty) ||
-      labelWrites.exists(x => readMap.contains(x.labelName))
+    (labelReads.nonEmpty && labelWrites(WritesAnyLabel)) ||
+      (labelReads(ReadsAnyLabel) && labelWrites.nonEmpty) ||
+      labelWrites.exists(x => labelReads(ReadsLabel(x.labelName)))
   }
 }

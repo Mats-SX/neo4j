@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.commands.values.UnresolvedLabel
-import org.neo4j.cypher.internal.compiler.v2_2.commands.{ReturnItem, True, HasLabel}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.values.UnresolvedLabel
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{HasLabel, ReturnItem, True}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.mutation.{CreateNode, CreateRelationship, MergeNodeAction, RelationshipEndpoint}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.matching.{PatternGraph, Trail, TraversalMatcher}
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb.Node
 import org.scalatest.prop.TableDrivenPropertyChecks
-import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
 class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
 
@@ -71,7 +71,7 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
       -> Effects(),
 
     TraversalMatchPipe(SingleRowPipe(), mock[TraversalMatcher], mock[Trail])
-      -> ReadEffects,
+      -> AllReadEffects,
 
     SlicePipe(SingleRowPipe(), Some(Literal(10)), None)
       -> Effects(),
@@ -80,7 +80,7 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
       new FakePipe(Iterator(Map("x" -> null)), "x" -> CTNode), Seq.empty,
       new PatternGraph(Map.empty, Map.empty, Seq.empty, Seq.empty),
       Set("x", "r", "z")
-    ) -> ReadEffects,
+    ) -> AllReadEffects,
 
     EmptyResultPipe(SingleRowPipe())
       -> Effects(),

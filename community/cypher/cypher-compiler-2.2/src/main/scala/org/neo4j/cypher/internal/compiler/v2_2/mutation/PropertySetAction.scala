@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_2.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions._
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{WriteEffects, WritesRelationships, WritesNodes, Effects}
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v2_2.symbols.{RelationshipType, NodeType, SymbolTable}
+import org.neo4j.cypher.internal.compiler.v2_2.symbols.{NodeType, RelationshipType, SymbolTable}
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.helpers.ThisShouldNotHappenError
 
@@ -34,11 +34,11 @@ case class PropertySetAction(prop: Property, e: Expression)
 
   def localEffects(symbols: SymbolTable) = mapExpr match {
     case i: Identifier => symbols.identifiers(i.entityName) match {
-      case _: NodeType         => Effects(WritesNodes)
-      case _: RelationshipType => Effects(WritesRelationships)
+      case _: NodeType         => Effects(WritesProperty(propertyKey.name))
+      case _: RelationshipType => Effects(WritesProperty(propertyKey.name))
       case _                   => Effects()
     }
-    case _ => WriteEffects
+    case _ => AllWriteEffects
   }
 
   def exec(context: ExecutionContext, state: QueryState) = {

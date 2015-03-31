@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.commands
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Expression, Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.helpers.IsCollection
 import org.neo4j.graphdb.{Node, Relationship}
@@ -87,6 +88,8 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
   def arguments = Seq(a, b)
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
+
+  override def localEffects: Effects = a.localEffects | b.localEffects
 }
 
 case class LessThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.ReadEffects
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.AllReadEffects
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.matching.{Trail, TraversalMatcher}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.KeyNames
 
@@ -52,7 +52,7 @@ case class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Tr
   def planDescription =
     source.planDescription.andThen(this, "TraversalMatcher", identifiers, KeyNames(trail.pathDescription))
 
-  override def localEffects = ReadEffects
+  override def localEffects = AllReadEffects
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources

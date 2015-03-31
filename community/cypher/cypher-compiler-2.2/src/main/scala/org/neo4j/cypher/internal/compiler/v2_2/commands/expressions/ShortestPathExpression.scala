@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{PathExtractor, Pattern, ShortestPath, SingleNode}
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.ReadEffects
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.AllReadEffects
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphalgo.GraphAlgoFactory
@@ -77,7 +77,7 @@ case class ShortestPathExpression(ast: ShortestPath) extends Expression with Pat
 
   def symbolTableDependencies = ast.symbolTableDependencies + ast.left.name + ast.right.name
 
-  override def localEffects = ReadEffects
+  override def localEffects = AllReadEffects
 }
 
 trait ShortestPathStrategy {
