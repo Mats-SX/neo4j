@@ -77,7 +77,7 @@ case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String
     copy(source = head)(estimatedCardinality)
   }
 
-  override def localEffects = predicate.effects
+  override def localEffects = predicate.effects(symbols)
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

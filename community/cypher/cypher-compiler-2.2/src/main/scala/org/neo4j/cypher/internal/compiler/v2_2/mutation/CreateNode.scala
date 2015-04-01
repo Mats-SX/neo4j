@@ -34,8 +34,8 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
   with GraphElementPropertyFunctions
   with CollectionSupport {
 
-  def localEffects(ignored: SymbolTable) = {
-    val propertyEffects = properties.values.foldLeft(Effects())(_ | _.effects)
+  def localEffects(symbols: SymbolTable) = {
+    val propertyEffects = properties.values.foldLeft(Effects())(_ | _.effects(symbols))
     val labelEffects = Effects(labels.map(kt => WritesLabel(kt.name)).toSet[Effect])
 
     Effects(WritesNodes) | propertyEffects | labelEffects

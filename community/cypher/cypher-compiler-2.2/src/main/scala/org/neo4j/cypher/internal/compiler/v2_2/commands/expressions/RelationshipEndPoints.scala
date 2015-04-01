@@ -47,5 +47,5 @@ case class RelationshipEndPoints(relExpression: Expression, start: Boolean) exte
 
   def symbolTableDependencies: Set[String] = relExpression.symbolTableDependencies
 
-  override def localEffects = Effects(ReadsRelationships)
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsRelationships)
 }

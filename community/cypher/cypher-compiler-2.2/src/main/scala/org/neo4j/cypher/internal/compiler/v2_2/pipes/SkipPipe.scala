@@ -54,7 +54,7 @@ case class SkipPipe(source: Pipe, exp: Expression)
     copy(source = head)(estimatedCardinality)
   }
 
-  override def localEffects = exp.effects
+  override def localEffects = exp.effects(symbols)
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

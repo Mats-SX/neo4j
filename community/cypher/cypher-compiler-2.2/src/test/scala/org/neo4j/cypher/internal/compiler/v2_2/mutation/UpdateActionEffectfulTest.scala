@@ -34,7 +34,7 @@ class UpdateActionEffectfulTest extends CypherFunSuite {
 
   test("Updates symbol table correctly when computing effects of MergeNodeAction") {
     val inner = PropertySetAction(Property(Identifier("a"), PropertyKey("x")), Literal(1))
-    val given = MergeNodeAction("a", Map.empty, Seq.empty, Seq.empty, Seq(inner), Seq.empty, None)
+    val given = MergeNodeAction("a", Map.empty, Seq.empty, Seq.empty, Seq(inner), Seq.empty, None) // match n set n.prop = 5 return n
 
     given.effects(SymbolTable()) should equal(Effects(ReadsNodes, WritesNodes, WritesProperty("x")))
   }

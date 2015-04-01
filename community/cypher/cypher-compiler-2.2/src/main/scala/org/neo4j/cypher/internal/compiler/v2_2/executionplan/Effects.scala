@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{ReturnItem, SortItem}
-import org.neo4j.cypher.internal.compiler.v2_2.mutation.{Effectful, UpdateAction}
+import org.neo4j.cypher.internal.compiler.v2_2.mutation.UpdateAction
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.Effectful
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 
 case class Effects(effectsSet: Set[Effect] = Set.empty) {
@@ -35,6 +36,11 @@ case class Effects(effectsSet: Set[Effect] = Set.empty) {
   def reads() = effectsSet.exists(_.reads)
 
   def writes() = effectsSet.exists(_.writes)
+
+  def toWriteEffects() = Effects(effectsSet.map{
+    case e: ReadEffect => e.toWriteEffect
+    case e: WriteEffect => e
+  }.toSet[Effect])
 }
 
 object AllWriteEffects extends Effects(Set(WritesNodes, WritesRelationships, WritesAnyLabel, WritesAnyProperty)) {
@@ -58,11 +64,11 @@ object Effects {
   }
 
   implicit class TraversableExpressions(iter: Traversable[Expression]) {
-    def effects: Effects = Effects(iter.flatMap(_.effects.effectsSet).toSet)
+    def effects(symbols: SymbolTable): Effects = Effects(iter.flatMap(_.effects(symbols).effectsSet).toSet)
   }
 
   implicit class EffectfulReturnItems(iter: Traversable[ReturnItem]) {
-    def effects: Effects = Effects(iter.flatMap(_.expression.effects.effectsSet).toSet)
+    def effects(symbols: SymbolTable): Effects = Effects(iter.flatMap(_.expression.effects(symbols).effectsSet).toSet)
   }
 
   implicit class EffectfulUpdateAction(commands: Traversable[UpdateAction]) {
@@ -70,11 +76,11 @@ object Effects {
   }
 
   implicit class MapEffects(m: Map[_, Expression]) {
-    def effects: Effects = Effects(m.values.flatMap(_.effects.effectsSet).toSet)
+    def effects(symbols: SymbolTable): Effects = Effects(m.values.flatMap(_.effects(symbols).effectsSet).toSet)
   }
 
   implicit class SortItemEffects(m: Traversable[SortItem]) {
-    def effects: Effects = Effects(m.flatMap(_.expression.effects.effectsSet).toSet)
+    def effects(symbols: SymbolTable): Effects = Effects(m.flatMap(_.expression.effects(symbols).effectsSet).toSet)
   }
 
 }
@@ -91,6 +97,8 @@ protected trait ReadEffect extends Effect {
   override def reads = true
 
   override def writes = false
+
+  def toWriteEffect: WriteEffect
 }
 
 protected trait WriteEffect extends Effect {
@@ -99,16 +107,22 @@ protected trait WriteEffect extends Effect {
   override def writes = true
 }
 
-case object ReadsNodes extends ReadEffect
+case object ReadsNodes extends ReadEffect {
+  override def toWriteEffect = WritesNodes
+}
 
 case object WritesNodes extends WriteEffect
 
-case object ReadsRelationships extends ReadEffect
+case object ReadsRelationships extends ReadEffect {
+  override def toWriteEffect = WritesRelationships
+}
 
 case object WritesRelationships extends WriteEffect
 
 case class ReadsProperty(propertyName: String) extends ReadEffect {
   override def toString = s"${super.toString} '$propertyName'"
+
+  override def toWriteEffect = WritesProperty(propertyName)
 }
 
 object ReadsAnyProperty extends ReadsProperty("")
@@ -121,6 +135,8 @@ object WritesAnyProperty extends WritesProperty("")
 
 case class ReadsLabel(labelName: String) extends ReadEffect {
   override def toString = s"${super.toString} '$labelName'"
+
+  override def toWriteEffect = WritesLabel(labelName)
 }
 
 object ReadsAnyLabel extends ReadsLabel("")

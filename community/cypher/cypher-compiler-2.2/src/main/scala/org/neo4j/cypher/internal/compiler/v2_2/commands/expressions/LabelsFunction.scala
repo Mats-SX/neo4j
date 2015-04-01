@@ -49,5 +49,5 @@ case class LabelsFunction(nodeExpr: Expression) extends Expression {
     CTCollection(CTString)
   }
 
-  override def localEffects = Effects(ReadsAnyLabel)
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsAnyLabel)
 }

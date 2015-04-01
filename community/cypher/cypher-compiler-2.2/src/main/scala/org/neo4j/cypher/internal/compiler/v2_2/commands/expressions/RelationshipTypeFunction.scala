@@ -40,5 +40,5 @@ case class RelationshipTypeFunction(relationship: Expression) extends NullInNull
 
   def symbolTableDependencies = relationship.symbolTableDependencies
 
-  override def localEffects = Effects(ReadsRelationships)
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsRelationships)
 }

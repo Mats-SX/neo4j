@@ -33,9 +33,9 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
     val sources = toPipe.sources.map(apply).map { fromPipe =>
       val from = fromPipe.effects
       val to = toPipe.localEffects
-      println(s"pipe = ${fromPipe.planDescription.name} from = $from\n toPipe = ${toPipe.planDescription.name} to = $to")
+//      println(s"pipe = ${fromPipe.planDescription.name} from = $from\n toPipe = ${toPipe.planDescription.name} to = $to")
       if (wouldInterfere(from, to)) {
-        println("----- eagerness inserted")
+//        println("----- eagerness inserted")
         new EagerPipe(fromPipe)(fromPipe.monitor)
       } else {
         fromPipe

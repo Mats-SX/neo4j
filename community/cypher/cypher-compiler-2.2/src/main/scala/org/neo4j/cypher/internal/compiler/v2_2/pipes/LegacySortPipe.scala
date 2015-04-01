@@ -50,7 +50,7 @@ case class LegacySortPipe(source: Pipe, sortDescription: List[SortItem])
   // no local effects
   override val localEffects = Effects()
   // the global effects are the one produced by the expression of the SortItems
-  override def effects = sortDescription.effects
+  override def effects = sortDescription.effects(symbols)
 }
 
 trait ExecutionContextComparer extends Comparer {

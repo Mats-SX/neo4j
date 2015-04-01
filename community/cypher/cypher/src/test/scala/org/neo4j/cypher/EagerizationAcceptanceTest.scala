@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher
 
+import org.scalatest.prop.TableDrivenPropertyChecks
+
 import scala.util.matching.Regex
 
-class EagerizationAcceptanceTest extends ExecutionEngineFunSuite {
+class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrivenPropertyChecks{
   val EagerRegEx: Regex = "Eager(?!A)".r
 
   test("should not introduce eagerness for MATCH nodes and CREATE relationships") {
@@ -149,6 +151,12 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite {
     assertNumberOfEagerness(query, 1)
   }
 
+  test("writing property without matching should not be eager") {
+    val query = "MATCH n SET n.prop = 5"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
   test("matching property via index and writing same property should be eager"){
     execute("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")
     execute("CREATE (b:Book {isbn : '123'})")
@@ -180,6 +188,246 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite {
     val query = "MATCH n WHERE n.prop1 > 10 SET n.prop2 = 5"
 
     assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property using ADD and writing should be eager") {
+    val query = "MATCH n WHERE n.prop + 1 = 1 SET n.prop = 5"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using ADD and not writing should not be eager") {
+    val query = "MATCH n WHERE n.prop + 1 = 1 RETURN n"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property using DIVIDE and writing should be eager") {
+    val query = "MATCH n WHERE n.prop / 3 = 1 SET n.prop = 5"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using DIVIDE and not writing should not be eager") {
+    val query = "MATCH n WHERE n.prop / 3 = 1 RETURN n"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property using SUBTRACT and writing should be eager") {
+    val query = "MATCH n WHERE n.prop - 1 = 1 SET n.prop = 5"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using SUBTRACT and not writing should not be eager") {
+    val query = "MATCH n WHERE n.prop - 1 = 1 RETURN n"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property using MULTIPLY and writing should be eager") {
+    val query = "MATCH n WHERE n.prop * 3 = 1 SET n.prop = 5"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using MULTIPLY and not writing should not be eager") {
+    val query = "MATCH n WHERE n.prop * 3 = 1 RETURN n"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property using COALESCE and writing should be eager") {
+    val query = "MATCH n WHERE COALESCE(n.prop, 2) = 1 SET n.prop = 3"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using COALESCE and not writing should not be eager") {
+    val query = "MATCH n WHERE COALESCE(n.prop, 2) = 1 RETURN n"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property using IN and writing should be eager") {
+    val query = "MATCH n WHERE n.prop IN [1] SET n.prop = 5"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using IN and not writing should not be eager") {
+    val query = "MATCH n WHERE n.prop IN [1] RETURN n"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property using Collection and writing should be eager") {
+    val query = "MATCH n WHERE [n.prop] = [1] SET n.prop = 5"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using Collection and not writing should not be eager") {
+    val query = "MATCH n WHERE [n.prop] = [1] RETURN n"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property using CollectionIndex and writing should be eager") {
+    val query = "MATCH n WHERE [n.prop][0] = 1 SET n.prop = 5"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using CollectionIndex and not writing should not be eager") {
+    val query = "MATCH n WHERE [n.prop][0] = 1 RETURN n"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property using CollectionSlice and writing should be eager") {
+    val query = "MATCH n WHERE [n.prop1, n.prop2][0..1] = [1, 1] SET n.prop1 = 5"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using CollectionSlice and not writing should not be eager") {
+    val query = "MATCH n WHERE [n.prop1, n.prop2][0..1] = [1, 1] RETURN n"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property using EXTRACT and writing should be eager") {
+    val query = "MATCH path=(n)-->(m) WHERE extract(x IN nodes(path) | x.prop) = [] SET n.prop = 5"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using EXTRACT and not writing should not be eager") {
+    val query = "MATCH path=(n)-->(m) WHERE extract(x IN nodes(path) | x.prop) = [] RETURN n"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property using REDUCE and writing should be eager") {
+    val query = "MATCH path=(n)-->(m) WHERE reduce(s = 0, x IN nodes(path) | s + x.prop) = 99 SET n.prop = 5"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using REDUCE and not writing should not be eager") {
+    val query = "MATCH path=(n)-->(m) WHERE reduce(s = 0, x IN nodes(path) | s + x.prop) = 99 RETURN n"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property using FILTER and writing should be eager") {
+    val query = "MATCH path=(n)-->(m) WHERE filter(x IN nodes(path) WHERE x.prop = 4) = [] SET n.prop = 10"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using FILTER and not writing should not be eager") {
+    val query = "MATCH path=(n)-->(m) WHERE filter(x IN nodes(path) WHERE x.prop = 4) = [] RETURN n"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property using KEYS and writing should be eager") {
+    val query = "MATCH n WHERE keys(n) = [] SET n.prop = 5"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using KEYS and not writing should not be eager") {
+    val query = "MATCH n WHERE keys(n) = [] RETURN n"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property using LABELS and writing should be eager") {
+    val query = "MATCH n WHERE labels(n) = [] SET n:Lol"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using LABELS and not writing should not be eager") {
+    val query = "MATCH n WHERE labels(n) = [] RETURN n"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property using MOD and writing should be eager") {
+    val query = "MATCH n WHERE n.prop % 3 = 2 SET n.prop = 5"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using MOD and not writing should not be eager") {
+    val query = "MATCH n WHERE n.prop % 3 = 2" +
+      " RETURN n"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  private def mathFunctions = Table(
+    "function name",
+    "abs",
+    "sqrt",
+    "round",
+    "sign",
+    "sin",
+    "cos",
+    "cot",
+    "tan",
+    "atan",
+    "acos",
+    "asin",
+    "haversin",
+    "ceil",
+    "floor",
+    "log",
+    "log10",
+    "exp"
+  )
+
+  forAll(mathFunctions) {
+    function =>
+      test(s"matching property using ${function.toUpperCase} and writing should be eager") {
+        assertNumberOfEagerness(s"MATCH n WHERE $function(n.prop) = 0 SET n.prop = 42", 1)
+      }
+  }
+
+  forAll(mathFunctions) {
+    function =>
+      test(s"matching property using ${function.toUpperCase} and not writing should not be eager") {
+        assertNumberOfEagerness(s"MATCH n WHERE $function(n.prop) = 0 SET n.prop = 42", 1)
+      }
+  }
+
+  private def mathOperators = Table(
+    "operator",
+    "+",
+    "-",
+    "/",
+    "*",
+    "%",
+    "^"
+  )
+
+  forAll(mathOperators) {
+    operator =>
+      test(s"matching using $operator should insert eagerness for writing on properties") {
+        assertNumberOfEagerness(s"MATCH n WHERE n.prop $operator 3 = 0 SET n.prop = 42", 1)
+      }
+  }
+
+  forAll(mathOperators) {
+    operator =>
+      test(s"matching using $operator should not insert eagerness when no writing is performed") {
+        assertNumberOfEagerness(s"MATCH n WHERE n.prop $operator 3 = 0 RETURN n", 0)
+      }
   }
 
   private def assertNumberOfEagerness(query: String, expectedEagerCount: Int) {

@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.mutation.Effectful
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{InternalPlanDescription, SingleRowPlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -33,6 +32,11 @@ trait PipeMonitor {
   def stopSetup(queryId: AnyRef, pipe: Pipe)
   def startStep(queryId: AnyRef, pipe: Pipe)
   def stopStep(queryId: AnyRef, pipe: Pipe)
+}
+
+trait Effectful {
+  def effects: Effects
+  def localEffects: Effects
 }
 
 /**

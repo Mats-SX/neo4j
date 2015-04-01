@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.graphdb.{Node, Relationship}
 
 /*

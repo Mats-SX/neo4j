@@ -248,7 +248,7 @@ case class PropertyExists(identifier: Expression, propertyKey: KeyToken) extends
 
   def symbolTableDependencies = identifier.symbolTableDependencies
 
-  override def localEffects = Effects(ReadsProperty(propertyKey.name))
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsProperty(propertyKey.name))
 }
 
 case class LiteralRegularExpression(a: Expression, regex: Literal) extends Predicate {
@@ -341,7 +341,7 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
 
   def containsIsNull = false
 
-  override def localEffects = Effects(ReadsLabel(label.name))
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsLabel(label.name))
 }
 
 case class CoercedPredicate(inner:Expression) extends Predicate with CollectionSupport {

@@ -103,7 +103,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
     copy(source = source)(estimatedCardinality)
   }
 
-  override def localEffects = aggregations.effects
+  override def localEffects = aggregations.effects(symbols)
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

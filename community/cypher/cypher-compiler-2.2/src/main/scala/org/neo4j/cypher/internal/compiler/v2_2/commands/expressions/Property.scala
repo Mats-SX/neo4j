@@ -60,5 +60,5 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
 
   override def toString = s"$mapExpr.${propertyKey.name}"
 
-  override def localEffects: Effects = Effects(ReadsProperty(propertyKey.name))
+  override def localEffects(symbols: SymbolTable): Effects = Effects(ReadsProperty(propertyKey.name))
 }
