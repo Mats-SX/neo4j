@@ -89,10 +89,6 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
   def arguments = Seq(a, b)
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
-
-  override def localEffects(symbols: SymbolTable): Effects = {
-    a.localEffects(symbols) | b.localEffects(symbols)
-  }
 }
 
 case class LessThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {

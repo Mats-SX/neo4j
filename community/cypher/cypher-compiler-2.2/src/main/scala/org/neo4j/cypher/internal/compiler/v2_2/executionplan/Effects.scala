@@ -37,7 +37,7 @@ case class Effects(effectsSet: Set[Effect] = Set.empty) {
 
   def writes() = effectsSet.exists(_.writes)
 
-  def toWriteEffects() = Effects(effectsSet.map{
+  def toWriteEffects() = Effects(effectsSet.map {
     case e: ReadEffect => e.toWriteEffect
     case e: WriteEffect => e
   }.toSet[Effect])

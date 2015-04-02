@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 
 trait EffectfulAstNode[T] extends AstNode[T] {
   def localEffects(symbols: SymbolTable): Effects
+
   final def effects(symbols: SymbolTable): Effects = {
     var completeEffects = localEffects(symbols)
     visitChildren {

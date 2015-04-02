@@ -23,7 +23,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 
 import scala.util.matching.Regex
 
-class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrivenPropertyChecks{
+class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrivenPropertyChecks {
   val EagerRegEx: Regex = "Eager(?!A)".r
 
   test("should not introduce eagerness for MATCH nodes and CREATE relationships") {
@@ -157,7 +157,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 0)
   }
 
-  test("matching property via index and writing same property should be eager"){
+  test("matching property via index and writing same property should be eager") {
     execute("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")
     execute("CREATE (b:Book {isbn : '123'})")
 
@@ -178,62 +178,38 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 0)
   }
 
-  test("matching property using LARGER THAN and writing to same property should be eager") {
-    val query = "MATCH n WHERE n.prop1 > 10 SET n.prop1 = 5"
+  test("matching property using OR and writing to same property should be eager") {
+    val query = "MATCH n WHERE n.prop1 = 10 OR n.prop2 = 10 SET n.prop1 = 5"
 
     assertNumberOfEagerness(query, 1)
   }
 
-  test("matching property using LARGER THAN and writing to different property should not be eager") {
-    val query = "MATCH n WHERE n.prop1 > 10 SET n.prop2 = 5"
+  test("matching property using OR and writing to different property should not be eager") {
+    val query = "MATCH n WHERE n.prop1 = 10 OR n.prop2 = 10 SET n.prop3 = 5"
 
     assertNumberOfEagerness(query, 0)
   }
 
-  test("matching property using ADD and writing should be eager") {
-    val query = "MATCH n WHERE n.prop + 1 = 1 SET n.prop = 5"
+  test("matching property using XOR and writing to same property should be eager") {
+    val query = "MATCH n WHERE n.prop1 XOR n.prop2 SET n.prop1 = 5"
 
     assertNumberOfEagerness(query, 1)
   }
 
-  test("matching property using ADD and not writing should not be eager") {
-    val query = "MATCH n WHERE n.prop + 1 = 1 RETURN n"
+  test("matching property using XOR and writing to different property should not be eager") {
+    val query = "MATCH n WHERE n.prop1 XOR n.prop2 SET n.prop3 = 5"
 
     assertNumberOfEagerness(query, 0)
   }
 
-  test("matching property using DIVIDE and writing should be eager") {
-    val query = "MATCH n WHERE n.prop / 3 = 1 SET n.prop = 5"
+  test("matching property using NOT and writing to same property should be eager") {
+    val query = "MATCH n WHERE NOT(n.prop1 = 42) SET n.prop1 = 5"
 
     assertNumberOfEagerness(query, 1)
   }
 
-  test("matching property using DIVIDE and not writing should not be eager") {
-    val query = "MATCH n WHERE n.prop / 3 = 1 RETURN n"
-
-    assertNumberOfEagerness(query, 0)
-  }
-
-  test("matching property using SUBTRACT and writing should be eager") {
-    val query = "MATCH n WHERE n.prop - 1 = 1 SET n.prop = 5"
-
-    assertNumberOfEagerness(query, 1)
-  }
-
-  test("matching property using SUBTRACT and not writing should not be eager") {
-    val query = "MATCH n WHERE n.prop - 1 = 1 RETURN n"
-
-    assertNumberOfEagerness(query, 0)
-  }
-
-  test("matching property using MULTIPLY and writing should be eager") {
-    val query = "MATCH n WHERE n.prop * 3 = 1 SET n.prop = 5"
-
-    assertNumberOfEagerness(query, 1)
-  }
-
-  test("matching property using MULTIPLY and not writing should not be eager") {
-    val query = "MATCH n WHERE n.prop * 3 = 1 RETURN n"
+  test("matching property using NOT and writing to different property should not be eager") {
+    val query = "MATCH n WHERE NOT(n.prop1 = 42) SET n.prop3 = 5"
 
     assertNumberOfEagerness(query, 0)
   }
@@ -346,6 +322,30 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 0)
   }
 
+  test("matching property using HAS and writing should be eager") {
+    val query = "MATCH n WHERE has(n.prop) SET n.prop = 5"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using HAS and not writing should not be eager") {
+    val query = "MATCH n WHERE has(n.prop) RETURN n"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property using RegEx and writing should be eager") {
+    val query = "MATCH n WHERE n.prop =~ 'Foo*' SET n.prop = 'bar'"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using RegEx and not writing should not be eager") {
+    val query = "MATCH n WHERE n.prop =~ 'Foo*' RETURN n"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
   test("matching property using LABELS and writing should be eager") {
     val query = "MATCH n WHERE labels(n) = [] SET n:Lol"
 
@@ -358,20 +358,67 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 0)
   }
 
-  test("matching property using MOD and writing should be eager") {
-    val query = "MATCH n WHERE n.prop % 3 = 2 SET n.prop = 5"
+  test("matching property using REPLACE and writing should be eager") {
+    val query = "MATCH n WHERE replace(n.prop, 'foo', 'bar') = 'baz' SET n.prop = 'qux'"
 
     assertNumberOfEagerness(query, 1)
   }
 
-  test("matching property using MOD and not writing should not be eager") {
-    val query = "MATCH n WHERE n.prop % 3 = 2" +
-      " RETURN n"
+  test("matching property using REPLACE and not writing should not be eager") {
+    val query = "MATCH n WHERE replace(n.prop, 'foo', 'bar') = 'baz' RETURN n"
 
     assertNumberOfEagerness(query, 0)
   }
 
-  private def mathFunctions = Table(
+  test("matching property using SUBSTRING and writing should be eager") {
+    val query = "MATCH n WHERE substring(n.prop, 3, 5) = 'foo' SET n.prop = 'bar'"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using SUBSTRING and not writing should not be eager") {
+    val query = "MATCH n WHERE substring(n.prop, 3, 5) = 'foo' RETURN n"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property using LEFT and writing should be eager") {
+    val query = "MATCH n WHERE left(n.prop, 5) = 'foo' SET n.prop = 'bar'"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using LEFT and not writing should not be eager") {
+    val query = "MATCH n WHERE left(n.prop, 5) = 'foo' RETURN n"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property using RIGHT and writing should be eager") {
+    val query = "MATCH n WHERE right(n.prop, 5) = 'foo' SET n.prop = 'bar'"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using RIGHT and not writing should not be eager") {
+    val query = "MATCH n WHERE right(n.prop, 5) = 'foo' RETURN n"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching property using SPLIT and writing should be eager") {
+    val query = "MATCH n WHERE split(n.prop, ',') = ['foo', 'bar'] SET n.prop = 'baz,qux'"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching property using SPLIT and not writing should not be eager") {
+    val query = "MATCH n WHERE split(n.prop, ',') = ['foo', 'bar'] RETURN n"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  private val MathFunctions = Table(
     "function name",
     "abs",
     "sqrt",
@@ -392,21 +439,18 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     "exp"
   )
 
-  forAll(mathFunctions) {
+  forAll(MathFunctions) {
     function =>
       test(s"matching property using ${function.toUpperCase} and writing should be eager") {
         assertNumberOfEagerness(s"MATCH n WHERE $function(n.prop) = 0 SET n.prop = 42", 1)
       }
-  }
 
-  forAll(mathFunctions) {
-    function =>
       test(s"matching property using ${function.toUpperCase} and not writing should not be eager") {
         assertNumberOfEagerness(s"MATCH n WHERE $function(n.prop) = 0 SET n.prop = 42", 1)
       }
   }
 
-  private def mathOperators = Table(
+  private val MathOperators = Table(
     "operator",
     "+",
     "-",
@@ -416,17 +460,76 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     "^"
   )
 
-  forAll(mathOperators) {
+  forAll(MathOperators) {
     operator =>
       test(s"matching using $operator should insert eagerness for writing on properties") {
         assertNumberOfEagerness(s"MATCH n WHERE n.prop $operator 3 = 0 SET n.prop = 42", 1)
       }
-  }
 
-  forAll(mathOperators) {
-    operator =>
       test(s"matching using $operator should not insert eagerness when no writing is performed") {
         assertNumberOfEagerness(s"MATCH n WHERE n.prop $operator 3 = 0 RETURN n", 0)
+      }
+  }
+
+  private val SingleArgStringFunctions = Table(
+    "function name",
+    "toString",
+    "lower",
+    "upper",
+    "trim",
+    "ltrim",
+    "rtrim"
+  )
+
+  forAll(SingleArgStringFunctions) {
+    function =>
+      test(s"matching using ${function.toUpperCase} should insert eagerness for writing on properties") {
+        assertNumberOfEagerness(s"MATCH n WHERE $function(n.prop) = 'foo' SET n.prop = 'bar'", 1)
+      }
+
+      test(s"matching using ${function.toUpperCase} should not insert eagerness when no writing is performed") {
+        assertNumberOfEagerness(s"MATCH n WHERE $function(n.prop) = 'foo' RETURN n", 0)
+      }
+  }
+
+  private val ConversionFunctions = Table(
+    ("function name", "initial value", "new value"),
+    ("toFloat", "1.11", "2.22"),
+    ("toInt", "5", "10"),
+    ("toString", "'foo'", "'bar'")
+  )
+
+  forAll(ConversionFunctions) {
+    (function, initialValue, newValue) =>
+      test(s"matching property using $function and writing should be eager") {
+        println("a")
+        assertNumberOfEagerness(s"MATCH n WHERE $function(n.prop) = $initialValue SET n.prop = $newValue", 1)
+      }
+
+      test(s"matching property using $function and not writing should not be eager") {
+        println("b")
+        assertNumberOfEagerness(s"MATCH n WHERE $function(n.prop) = $initialValue RETURN n", 0)
+      }
+  }
+
+  private val ComparisonOperators = Table(
+    "operator",
+    "=",
+    "<>",
+    "<",
+    ">",
+    "<=",
+    ">="
+  )
+
+  forAll(ComparisonOperators) {
+    operator =>
+      test(s"matching property using '$operator' and writing to same property should be eager") {
+        assertNumberOfEagerness(s"MATCH n WHERE n.prop $operator 10 SET n.prop = 5", 1)
+      }
+
+      test(s"matching property using '$operator' and writing to different property should not be eager") {
+        assertNumberOfEagerness(s"MATCH n WHERE n.prop1 $operator 10 SET n.prop2 = 5", 0)
       }
   }
 
