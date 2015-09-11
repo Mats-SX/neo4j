@@ -596,6 +596,7 @@ public class DiskLayer implements StoreReadLayer
                             NodeRecord record = store.loadRecord( currentId, reusableNodeRecord );
                             if ( record != null && record.inUse() )
                             {
+                                System.out.println("RETURNING A NODE FROM THE STORE, ID " + record.getId());
                                 return next( record.getId() );
                             }
                         }
