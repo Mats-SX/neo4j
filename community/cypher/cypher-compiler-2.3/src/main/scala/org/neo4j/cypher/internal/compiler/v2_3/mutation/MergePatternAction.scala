@@ -32,12 +32,12 @@ import org.neo4j.graphdb.Node
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class MergePatternAction(patterns: Seq[Pattern],
-                              actions: Seq[UpdateAction],
-                              onMatch: Seq[UpdateAction],
+                              allCreateActions: Seq[UpdateAction],
+                              onMatchActions: Seq[UpdateAction],
                               maybeUpdateActions: Option[Seq[UpdateAction]] = None,
                               maybeMatchPipe: Option[Pipe] = None) extends UpdateAction {
 
-  def children: Seq[AstNode[_]] = patterns ++ actions ++ onMatch
+  def children: Seq[AstNode[_]] = patterns ++ allCreateActions ++ onMatchActions
 
   def readyToExecute = maybeMatchPipe.nonEmpty && maybeUpdateActions.nonEmpty
 
@@ -98,16 +98,16 @@ case class MergePatternAction(patterns: Seq[Pattern],
   def rewrite(f: (Expression) => Expression): UpdateAction =
     MergePatternAction(
       patterns = patterns.map(_.rewrite(f)),
-      actions = actions.map(_.rewrite(f)),
-      onMatch = onMatch.map(_.rewrite(f)),
+      allCreateActions = allCreateActions.map(_.rewrite(f)),
+      onMatchActions = onMatchActions.map(_.rewrite(f)),
       maybeUpdateActions = maybeUpdateActions.map(_.map(_.rewrite(f))),
       maybeMatchPipe = maybeMatchPipe)
 
   def symbolTableDependencies: Set[String] = {
     val dependencies = (
       patterns.flatMap(_.symbolTableDependencies) ++
-      actions.flatMap(_.symbolTableDependencies) ++
-      onMatch.flatMap(_.symbolTableDependencies)).toSet
+      allCreateActions.flatMap(_.symbolTableDependencies) ++
+      onMatchActions.flatMap(_.symbolTableDependencies)).toSet
 
     val introducedIdentifiers = patterns.flatMap(_.identifiers).toSet
 
@@ -129,8 +129,8 @@ case class MergePatternAction(patterns: Seq[Pattern],
     val effectsFromReading = readEffects(externalSymbols)
 
     val allSymbols = updateSymbols(externalSymbols)
-    val actionEffects = actions.effects(allSymbols)
-    val onMatchEffects = onMatch.effects(allSymbols)
+    val actionEffects = allCreateActions.effects(allSymbols)
+    val onMatchEffects = onMatchActions.effects(allSymbols)
     val updateActionsEffects = updateActions.effects(allSymbols)
 
     actionEffects | onMatchEffects | updateActionsEffects | effectsFromReading
