@@ -117,7 +117,7 @@ case class MergePatternAction(patterns: Seq[Pattern],
   private def readEffects(symbols: SymbolTable): Effects = {
     val collect: Seq[Effect] = identifiers.collect {
       case (k, CTNode) if !symbols.hasIdentifierNamed(k) => ReadsAllNodes
-      case (k, CTRelationship) if !symbols.hasIdentifierNamed(k) => ReadsRelationshipsWithAnyType
+      case (k, CTRelationship) if !symbols.hasIdentifierNamed(k) => ReadsAllRelationships
     }
 
     Effects(collect.toSet)
@@ -133,7 +133,7 @@ case class MergePatternAction(patterns: Seq[Pattern],
     val onMatchEffects = onMatchActions.effects(allSymbols)
     val updateActionsEffects = updateActions.effects(allSymbols)
 
-    actionEffects | onMatchEffects | updateActionsEffects | effectsFromReading
+    actionEffects ++ onMatchEffects ++ updateActionsEffects ++ effectsFromReading
   }
 
   override def updateSymbols(symbol: SymbolTable): SymbolTable = symbol.add(identifiers.toMap)
