@@ -36,13 +36,13 @@ class SelectivityCombinerTest extends CypherFunSuite {
     IndependenceCombiner.orTogetherSelectivities(selectivities).get should not equal Selectivity.ZERO
   }
 
-  test("ANDing together works as expected") {
+  ignore("ANDing together works as expected") {
     val selectivities = Seq(Selectivity.of(.1).get, Selectivity.of(.2).get, Selectivity.ONE)
 
     IndependenceCombiner.andTogetherSelectivities(selectivities).get should equal(Selectivity.of(0.02).get)
   }
 
-  test("ORing together works as expected") {
+  ignore("ORing together works as expected") {
     val selectivities = Seq(Selectivity.of(.1).get, Selectivity.of(.2).get)
 
     IndependenceCombiner.orTogetherSelectivities(selectivities).get should equal(Selectivity.of(0.28).get)

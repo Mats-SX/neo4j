@@ -33,6 +33,19 @@ trait SelectivityCombiner {
 
 case object IndependenceCombiner extends SelectivityCombiner {
 
+  override def andTogetherSelectivities(selectivities: Seq[Selectivity]): Option[Selectivity] = {
+    selectivities.reduceOption(_ * _)
+  }
+
+  // A ∪ B = ¬ ( ¬ A ∩ ¬ B )
+  override def orTogetherSelectivities(selectivities: Seq[Selectivity]): Option[Selectivity] = {
+    val inverses = selectivities.map(_.negate)
+    andTogetherSelectivities(inverses).map(_.negate)
+  }
+}
+
+case object IndependenceBigDecimalCombiner extends SelectivityCombiner {
+
   // This is the simple and straight forward way of combining two statistically independent probabilities
   //P(A ∪ B) = P(A) * P(B)
   def andTogetherSelectivities(selectivities: Seq[Selectivity]): Option[Selectivity] = {
