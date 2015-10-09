@@ -174,7 +174,7 @@ object Selectivity {
 
   val ZERO = Selectivity(0.0d)
   val ONE = Selectivity(1.0d)
-  val CLOSEST_TO_ONE = Selectivity(1 - 5.56e-17)    // we can get closer, but this is close enough
+  val CLOSEST_TO_ONE = Selectivity(1 - 5.551115123125785e-17)    // we can get closer, but this is close enough
 
 
   implicit def turnSeqIntoSingleSelectivity(p: Seq[Selectivity]): Selectivity =

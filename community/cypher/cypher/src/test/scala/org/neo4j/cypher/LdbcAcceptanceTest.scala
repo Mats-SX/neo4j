@@ -38,4 +38,23 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
       result should equal(ldbcQuery.expectedResult)
     }
   }
+
+  test("LDBC query 12 should not get a bad plan because of lost precision in selectivity calculation") {
+    executeWithRulePlannerOnly(LdbcQueries.Query12.createQuery, LdbcQueries.Query12.createParams.toSeq: _*)
+    LdbcQueries.Query12.constraintQueries.foreach(executeWithRulePlannerOnly(_))
+
+    val updatedLdbc12 =
+      """MATCH (:Person {id:{1}})-[:KNOWS]-(friend:Person)
+        |MATCH (friend)<-[:COMMENT_HAS_CREATOR]-(comment:Comment)-[:REPLY_OF_POST]->(:Post)-[:POST_HAS_TAG]->(tag:Tag)-[:HAS_TYPE]->(tagClass:TagClass)-[:IS_SUBCLASS_OF*0..]->(baseTagClass:TagClass)
+        |WHERE tagClass.name = {2} OR baseTagClass.name = {2}
+        |RETURN friend.id AS friendId, friend.firstName AS friendFirstName, friend.lastName AS friendLastName, collect(DISTINCT tag.name) AS tagNames, count(DISTINCT comment) AS count
+        |ORDER BY count DESC, friendId ASC
+        |LIMIT {3}
+      """.stripMargin
+
+    val params: Map[String, Any] = Map("1" -> 0, "2" -> 1, "3" -> 10)
+
+    val result = executeWithAllPlanners(s"PROFILE $updatedLdbc12", params.toSeq:_*)
+    println(result.executionPlanDescription())
+  }
 }
