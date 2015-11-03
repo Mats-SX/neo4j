@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.ASTNode
 import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_0.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_0.ast.ASTNode
 
 import scala.annotation.tailrec
 
@@ -47,7 +47,7 @@ case class repeatWithSizeLimit(rewriter: Rewriter)(implicit val monitor: AstRewr
     val newSize = astNodeSize(t)
 
     if (newSize > limit) {
-      monitor.abortedRewriting(that )
+      monitor.abortedRewriting(that)
       that
     }
     else if (t == that) {
