@@ -78,6 +78,8 @@ abstract class LogicalPlan
     }
   }
 
+  def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan
+
   lazy val copyConstructor: Method = this.getClass.getMethods.find(_.getName == "copy").get
 
   def updateSolved(f: PlannerQuery with CardinalityEstimation => PlannerQuery with CardinalityEstimation): LogicalPlan =
@@ -128,9 +130,11 @@ trait LogicalPlanWithoutExpressions {
 }
 
 abstract class LogicalLeafPlan extends LogicalPlan with LazyLogicalPlan {
-  final val lhs = None
-  final val rhs = None
+  override final val lhs = None
+  override final val rhs = None
   def argumentIds: Set[IdName]
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan = this
 }
 
 abstract class NodeLogicalLeafPlan extends LogicalLeafPlan {

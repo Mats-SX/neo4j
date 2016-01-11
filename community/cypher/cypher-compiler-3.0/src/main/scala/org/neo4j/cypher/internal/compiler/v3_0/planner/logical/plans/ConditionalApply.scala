@@ -28,4 +28,7 @@ case class ConditionalApply(left: LogicalPlan, right: LogicalPlan, items: Seq[Id
   val rhs = Some(right)
 
   def availableSymbols = left.availableSymbols ++ right.availableSymbols ++ items
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(left = newLhs.getOrElse(throw new IllegalStateException), right = newRhs.getOrElse(throw new IllegalStateException))(solved)
 }

@@ -56,17 +56,39 @@ case class DefaultQueryPlanner(planRewriter: Rewriter,
     if (distinct)
       context.logicalPlanProducer.planDistinct(unionPlan)
     else
+
       unionPlan
   }
 }
 
 case object planPart extends ((PlannerQuery, LogicalPlanningContext, Option[LogicalPlan]) => LogicalPlan) {
 
-  def apply(query: PlannerQuery, context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
+    def apply(query: PlannerQuery, context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
     val ctx = query.preferredStrictness match {
       case Some(mode) if !context.input.strictness.contains(mode) => context.withStrictness(mode)
       case _ => context
     }
-    ctx.strategy.plan(query.queryGraph)(ctx, leafPlan)
+    // TODO: Find the right home for this case
+    if (query.isInstanceOf[MergePlannerQuery]) {
+      //      ctx.logicalPlanProducer.planSingleRow()(context)
+      val leaf: LogicalPlan = ctx.logicalPlanProducer.planSingleRow()(context)
+      query.updateGraph.mutatingPatterns.foldLeft(leaf)((plan, pattern) => pattern match {
+        case p: MergeNodePattern =>
+          val newPlan = PlanUpdates.planMergeReadPart(query, plan, p.matchGraph)(context)
+          Debug.dprintln(s"MergePlannerQuery planPart pattern=$pattern\nsolved=${newPlan.solved}\nplan=$newPlan")
+          newPlan
+
+        case p: MergeRelationshipPattern =>
+          val newPlan = PlanUpdates.planMergeReadPart(query, plan, p.matchGraph)(context)
+          Debug.dprintln(s"MergePlannerQuery planPart pattern=$pattern\nsolved=${newPlan.solved}\nplan=$newPlan")
+          newPlan
+
+        case p =>
+          Debug.dprintln(s"MergePlannerQuery planPart pattern=$pattern\nsolved=${plan.solved}\nplan=$plan")
+          plan
+      })
+    }
+    else
+      ctx.strategy.plan(query.queryGraph)(ctx, leafPlan)
   }
 }

@@ -34,4 +34,8 @@ case class Projection(left: LogicalPlan, expressions: Map[String, Expression])
 
   override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
     copy(expressions = Eagerly.immutableMapValues[String, Expression, Expression](expressions, f(left.availableSymbols, _)))(solved)
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(left = newLhs.getOrElse(throw new IllegalStateException))(solved)
+
 }

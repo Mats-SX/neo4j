@@ -38,16 +38,28 @@ case object unnestApply extends Rewriter {
     LOJ: Left Outer Join
     SR : SingleRow - operator that produces single row with no columns
     CN : CreateNode
+    D : Delete
+    E : Eager
+    M : Merge
+    Sp : SetProperty
+    Sm : SetPropertiesFromMap
+    Sl : SetLabels
    */
 
   private val instance: Rewriter = Rewriter.lift {
-    // SR Ax R => R iff Arg0 introduces no arguments
-    case Apply(_: SingleRow, rhs) =>
-      rhs
+//    case x => x
 
     // L Ax Arg => L
     case Apply(lhs, _: Argument) =>
       lhs
+
+    // L Ax SR => L
+    case Apply(lhs, _: SingleRow) =>
+      lhs
+
+    // SR Ax R => R iff Arg0 introduces no arguments
+    case Apply(_: SingleRow, rhs) =>
+      rhs
 
     // L Ax (Arg Ax R) => L Ax R
     case original@Apply(lhs, Apply(_: Argument, rhs)) =>
@@ -86,7 +98,65 @@ case object unnestApply extends Rewriter {
     // L Ax (CN R) => CN Ax (L R)
     case apply@Apply(lhs, create@CreateNode(rhs, name, labels, props)) =>
       CreateNode(Apply(lhs, rhs)(apply.solved), name, labels, props)(apply.solved)
+
+    // L Ax (CN R) => CN Ax (L R)
+    case apply@Apply(lhs, create@CreateRelationship(rhs, name, start, typ, end, props)) =>
+      CreateRelationship(Apply(lhs, rhs)(apply.solved), name, start, typ, end, props)(apply.solved)
+
+    // L Ax (D R) => D Ax (L R)
+    case apply@Apply(lhs, delete@DeleteNode(rhs, expr)) =>
+      DeleteNode(Apply(lhs, rhs)(apply.solved), expr)(apply.solved)
+
+    // L Ax (D R) => D Ax (L R)
+    case apply@Apply(lhs, delete@DeleteRelationship(rhs, expr)) =>
+      DeleteRelationship(Apply(lhs, rhs)(apply.solved), expr)(apply.solved)
+
+    // L Ax (Sp R) => Sp Ax (L R)
+    case apply@Apply(lhs, set@SetNodeProperty(rhs, idName, key, value)) =>
+      SetNodeProperty(Apply(lhs, rhs)(apply.solved), idName, key, value)(apply.solved)
+
+    // L Ax (Sm R) => Sm Ax (L R)
+    case apply@Apply(lhs, set@SetNodePropertiesFromMap(rhs, idName, expr, removes)) =>
+      SetNodePropertiesFromMap(Apply(lhs, rhs)(apply.solved), idName, expr, removes)(apply.solved)
+
+    // L Ax (Sl R) => Sl Ax (L R)
+    case apply@Apply(lhs, set@SetLabels(rhs, idName, labelNames)) =>
+      SetLabels(Apply(lhs, rhs)(apply.solved), idName, labelNames)(apply.solved)
+
+    // L Ax (Rl R) => Rl Ax (L R)
+    case apply@Apply(lhs, remove@RemoveLabels(rhs, idName, labelNames)) =>
+      RemoveLabels(Apply(lhs, rhs)(apply.solved), idName, labelNames)(apply.solved)
+
+    // L Ax (M R) => M Ax (L R)
+    case apply@Apply(lhs, merge@AsMergePlan(source, sourceReplacer)) =>
+      sourceReplacer(Apply(lhs, source)(apply.solved))
+
+    // L Ax (E R) => E Ax (L R)
+    case apply@Apply(lhs, eager@Eager(rhs)) =>
+      Eager(Apply(lhs, rhs)(apply.solved))(apply.solved)
+
+      // TODO Move this rewriter
+    // E E => E
+    case outer@Eager(Eager(inner)) =>
+      Eager(inner)(outer.solved)
   }
 
-  override def apply(input: AnyRef) = bottomUp(instance).apply(input)
+  override def apply(input: AnyRef) = {
+    val up = bottomUp(instance)
+    up.apply(input)
+  }
 }
+
+object AsMergePlan {
+  def unapply(v: Any): Option[(LogicalPlan, LogicalPlan => LogicalPlan)] = v match {
+      // Full merge plan pattern
+    case topMergePlan@AntiConditionalApply(condApply@ConditionalApply(apply@Apply(lhs, mergeRead), onMatch, name1), mergeCreate, name2) =>
+      Some(lhs, (plan: LogicalPlan) => AntiConditionalApply(ConditionalApply(Apply(plan, mergeRead)(apply.solved), onMatch, name1)(condApply.solved), mergeCreate, name2)(topMergePlan.solved))
+      // Merge plan pattern when there is no ON MATCH part
+    case topMergePlan@AntiConditionalApply(apply@Apply(lhs, mergeRead), mergeCreate, name) =>
+      Some(lhs, (plan: LogicalPlan) => AntiConditionalApply(Apply(plan, mergeRead)(apply.solved), mergeCreate, name)(topMergePlan.solved))
+    case _ =>
+      None
+  }
+}
+

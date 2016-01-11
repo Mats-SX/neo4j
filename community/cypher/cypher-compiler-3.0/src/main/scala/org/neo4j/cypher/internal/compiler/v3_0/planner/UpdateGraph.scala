@@ -101,8 +101,8 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
   /*
    * finds all label names being removed on given node, REMOVE a:L
    */
-  def labelsToRemoveFromOtherNodes(idName: IdName): Set[LabelName] = removeLabelPatterns.collect {
-    case RemoveLabelPattern(n, labels) if n != idName => labels
+  def labelsToRemove: Set[LabelName] = removeLabelPatterns.collect {
+    case RemoveLabelPattern(n, labels) => labels
   }.flatten.toSet
 
   /*
@@ -133,6 +133,8 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
         deleteOverlap(qg) || removeLabelOverlap(qg) || setLabelOverlap(qg) || setPropertyOverlap(qg)
         || mergeDeleteOverlap)
 
+  def overlaps(ug: UpdateGraph) = deleteOverlapWithMergeNodeIn(ug)
+
   /*
    * Checks for overlap between nodes being read in the query graph
    * and those being created here
@@ -157,7 +159,12 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
   }
 
   //if we do match delete and merge we always need to be eager
+  // TODO:H Do we need both of these?
   def mergeDeleteOverlap = deleteExpressions.nonEmpty && (mergeNodePatterns.nonEmpty || mergeRelationshipPatterns.nonEmpty)
+
+  def deleteOverlapWithMergeNodeInSelf = deleteExpressions.nonEmpty && (mergeNodePatterns.nonEmpty || mergeRelationshipPatterns.nonEmpty)
+
+  def deleteOverlapWithMergeNodeIn(other: UpdateGraph) = deleteExpressions.nonEmpty && other.mergeNodePatterns.nonEmpty
 
   /*
    * Checks for overlap between rels being read in the query graph

@@ -33,4 +33,8 @@ case class RemoveLabels(source: LogicalPlan, idName: IdName, labelNames: Seq[Lab
   override def rhs: Option[LogicalPlan] = None
 
   override def strictness: StrictnessMode = source.strictness
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(source = newLhs.getOrElse(throw new IllegalStateException))(solved)
+
 }

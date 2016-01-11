@@ -39,6 +39,10 @@ case class Expand(left: LogicalPlan,
   def rhs = None
 
   def availableSymbols: Set[IdName] = left.availableSymbols + relName + to
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(left = newLhs.getOrElse(throw new IllegalStateException))(solved)
+
 }
 
 case class OptionalExpand(left: LogicalPlan, from: IdName, dir: SemanticDirection, types: Seq[RelTypeName], to: IdName, relName: IdName, mode: ExpansionMode = ExpandAll, predicates: Seq[Expression] = Seq.empty)
@@ -50,6 +54,10 @@ case class OptionalExpand(left: LogicalPlan, from: IdName, dir: SemanticDirectio
 
   override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
     copy(predicates = predicates.map(f(availableSymbols, _)))(solved)
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(left = newLhs.getOrElse(throw new IllegalStateException))(solved)
+
 }
 
 // TODO: Support proper var length handling in Ronja again
@@ -76,4 +84,8 @@ case class VarExpand(left: LogicalPlan,
       case tuple @ (ident, expr) =>
         (ident, f(left.availableSymbols + relName + IdName(ident.name), expr))
     })(solved)
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(left = newLhs.getOrElse(throw new IllegalStateException))(solved)
+
 }

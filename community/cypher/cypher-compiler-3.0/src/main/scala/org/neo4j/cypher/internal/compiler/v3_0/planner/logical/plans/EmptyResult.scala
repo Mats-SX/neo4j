@@ -31,4 +31,8 @@ case class EmptyResult(inner: LogicalPlan)(val solved: PlannerQuery with Cardina
   override def rhs: Option[LogicalPlan] = None
 
   override def strictness: StrictnessMode = inner.strictness
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(inner = newLhs.getOrElse(throw new IllegalStateException))(solved)
+
 }

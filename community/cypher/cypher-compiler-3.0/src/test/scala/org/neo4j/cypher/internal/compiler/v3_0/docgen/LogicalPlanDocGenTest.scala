@@ -89,6 +89,7 @@ class LogicalPlanDocGenTest extends DocHandlerTestSuite[Any] {
     def strictness = ???
     def availableSymbols = Set[IdName](IdName("b"))
     def solved: PlannerQuery with CardinalityEstimation = ???
+    override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan = ???
   }
 
   case class TestComboPlan(left: LogicalPlan, right: LogicalPlan) extends LogicalPlan with LogicalPlanWithoutExpressions {
@@ -97,5 +98,6 @@ class LogicalPlanDocGenTest extends DocHandlerTestSuite[Any] {
     def strictness = ???
     def availableSymbols = Set[IdName](IdName("c"), IdName("d"))
     def solved: PlannerQuery with CardinalityEstimation = ???
+    override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan = ???
   }
 }

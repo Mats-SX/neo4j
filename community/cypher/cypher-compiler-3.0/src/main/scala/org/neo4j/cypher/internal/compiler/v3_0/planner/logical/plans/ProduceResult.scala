@@ -34,4 +34,8 @@ case class ProduceResult(columns: Seq[String], inner: LogicalPlan) extends Logic
     copy(inner = inner.mapExpressions(f))
 
   def strictness = inner.strictness
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(inner = newLhs.getOrElse(throw new IllegalStateException))
+
 }

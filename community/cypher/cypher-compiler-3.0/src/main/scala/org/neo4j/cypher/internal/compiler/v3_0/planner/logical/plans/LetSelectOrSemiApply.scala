@@ -28,6 +28,10 @@ case class LetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: I
 
   override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
     copy(expr = f(left.availableSymbols, expr))(solved)
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(left = newLhs.getOrElse(throw new IllegalStateException))(solved)
+
 }
 
 case class LetSelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression)
@@ -36,6 +40,10 @@ case class LetSelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idNam
 
   override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
     copy(expr = f(left.availableSymbols, expr))(solved)
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(left = newLhs.getOrElse(throw new IllegalStateException))(solved)
+
 }
 
 abstract class AbstractLetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression,

@@ -207,7 +207,8 @@ case class Merge(pattern: Pattern, actions: Seq[MergeAction])(val position: Inpu
 
   override def semanticCheck =
     pattern.semanticCheck(Pattern.SemanticContext.Merge) chain
-      actions.semanticCheck chain checkRelTypes
+      actions.semanticCheck chain checkRelTypes chain
+      noteCurrentScope
 
   // Copied code from CREATE below
   private def checkRelTypes: SemanticCheck  =

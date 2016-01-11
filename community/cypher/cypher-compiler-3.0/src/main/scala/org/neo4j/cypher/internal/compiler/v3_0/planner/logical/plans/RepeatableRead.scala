@@ -33,4 +33,8 @@ case class RepeatableRead(inner: LogicalPlan)
   override def lhs: Option[LogicalPlan] = Some(inner)
 
   override def rhs: Option[LogicalPlan] = None
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(inner = newLhs.getOrElse(throw new IllegalStateException))(solved)
+
 }

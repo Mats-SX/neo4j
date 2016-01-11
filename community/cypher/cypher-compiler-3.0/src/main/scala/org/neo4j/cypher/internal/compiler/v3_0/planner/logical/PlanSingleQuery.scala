@@ -36,7 +36,8 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
 
   override def apply(in: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val partPlan = countStorePlanner(in).getOrElse(planPart(in, context, None))
-   //always use eager if configured to do so
+
+    //always use eager if configured to do so
     val alwaysEager = context.config.updateStrategy.alwaysEager
 
     // TODO: Pass planEffects as a LogicalPlanningFunction? (Default PlanEffects, alwaysEager could be another implementation)
@@ -45,6 +46,7 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
         context.logicalPlanProducer.planEager(partPlan)
       else partPlan
     val planWithUpdates = planUpdates(in, planWithEffect)(context)
+
     val projectedPlan = planEventHorizon(in, planWithUpdates)
     val projectedContext = context.recurse(projectedPlan)
     val expressionRewriter = expressionRewriterFactory(projectedContext)
@@ -53,6 +55,18 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
     val finalPlan = planWithTail(completePlan, in.tail)(projectedContext)
     verifyBestPlan(finalPlan, in)
   }
+
+
+//    case _: MergePlannerQuery =>
+//      val planWithUpdates = planUpdates(in, context.logicalPlanProducer.planSingleRow())(context)
+//
+//      val projectedPlan = planEventHorizon(in, planWithUpdates)
+//      val projectedContext = context.recurse(projectedPlan)
+//      val expressionRewriter = expressionRewriterFactory(projectedContext)
+//      val completePlan = projectedPlan.endoRewrite(expressionRewriter)
+//
+//      val finalPlan = planWithTail(completePlan, in.tail)(projectedContext)
+//      verifyBestPlan(finalPlan, in)
 
   /*
    * The first reading leaf node is always stable. However for every preceding leaf node

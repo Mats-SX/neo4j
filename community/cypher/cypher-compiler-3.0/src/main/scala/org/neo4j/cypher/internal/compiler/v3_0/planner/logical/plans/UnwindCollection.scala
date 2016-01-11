@@ -32,5 +32,9 @@ case class UnwindCollection(left: LogicalPlan, variable: IdName, expression: Exp
 
   override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
     copy(expression = f(left.availableSymbols, expression))(solved)
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(left = newLhs.getOrElse(throw new IllegalStateException))(solved)
+
 }
 

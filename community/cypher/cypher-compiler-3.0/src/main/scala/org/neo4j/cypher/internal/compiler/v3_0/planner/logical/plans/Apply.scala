@@ -28,4 +28,8 @@ case class Apply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery
   val rhs = Some(right)
 
   def availableSymbols = left.availableSymbols ++ right.availableSymbols
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(left = newLhs.getOrElse(throw new IllegalStateException),
+         right = newRhs.getOrElse(throw new IllegalStateException))(solved)
 }

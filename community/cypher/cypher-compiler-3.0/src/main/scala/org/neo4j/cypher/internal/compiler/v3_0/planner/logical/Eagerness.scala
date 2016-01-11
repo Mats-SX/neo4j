@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import scala.annotation.tailrec
 
 object Eagerness {
-
   /**
    * Determines whether there is a conflict between the so-far planned LogicalPlan
    * and the remaining parts of the PlannerQuery. This function assumes that the
@@ -75,17 +74,12 @@ object Eagerness {
 
 
   /**
-   * Determines whether there is a conflict between the so-far planned LogicalPlan
-   * and the remaining parts of the PlannerQuery. This function assumes that the
-   * argument PlannerQuery is not the head of the PlannerQuery chain.
-   */
-  def conflictInTail(plan: LogicalPlan, plannerQuery: PlannerQuery): Boolean = {
-    // Start recursion by checking the given plannerQuery against itself
-    tailConflicts(plannerQuery, plannerQuery)
-  }
-
+    * Determines whether there is a conflict between the two PlannerQuery objects.
+    * This function assumes that none of the argument PlannerQuery objects is
+    * the head of the PlannerQuery chain.
+    */
   @tailrec
-  private def tailConflicts(head: PlannerQuery, tail: PlannerQuery): Boolean = {
+  def conflictInTail(head: PlannerQuery, tail: PlannerQuery): Boolean = {
     val conflict = if (tail.updateGraph.isEmpty) false
     else tail.updateGraph overlaps head.queryGraph
     if (conflict)
@@ -93,7 +87,7 @@ object Eagerness {
     else if (tail.tail.isEmpty)
       false
     else
-      tailConflicts(head, tail.tail.get)
+      conflictInTail(head, tail.tail.get)
   }
 
   /*
@@ -106,7 +100,7 @@ object Eagerness {
     val propertiesOnCurrentNode = headQueryGraph.allKnownPropertiesOnIdentifier(currentNode).map(_.propertyKey)
     val labelsToCreate = tail.updateGraph.createLabels
     val propertiesToCreate = tail.updateGraph.createNodeProperties
-    val labelsToRemove = tail.updateGraph.labelsToRemoveFromOtherNodes(currentNode)
+    val labelsToRemove = tail.updateGraph.labelsToRemove
 
     tail.updatesNodes &&
       (labelsOnCurrentNode.isEmpty && propertiesOnCurrentNode.isEmpty && tail.createsNodes || //MATCH () CREATE (...)?
@@ -115,8 +109,7 @@ object Eagerness {
 
         //MATCH (n:A), (m:B) REMOVE n:B
         //MATCH (n:A), (m:A) REMOVE m:A
-        (labelsToRemove intersect labelsOnCurrentNode).nonEmpty
-        )
+        (labelsToRemove intersect labelsOnCurrentNode).nonEmpty)
   }
 
   /*

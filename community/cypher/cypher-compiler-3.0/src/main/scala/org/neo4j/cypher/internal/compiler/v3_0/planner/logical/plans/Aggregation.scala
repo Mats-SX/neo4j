@@ -43,4 +43,8 @@ case class Aggregation(left: LogicalPlan,
       groupingExpressions = Eagerly.immutableMapValues[String, Expression, Expression](groupingExpressions, f(left.availableSymbols, _)),
       aggregationExpression = Eagerly.immutableMapValues[String, Expression, Expression](aggregationExpression, f(left.availableSymbols ++ groupingKeys, _))
     )(solved)
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(left = newLhs.getOrElse(throw new IllegalStateException))(solved)
+
 }

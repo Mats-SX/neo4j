@@ -37,4 +37,8 @@ case class ProjectEndpoints(left: LogicalPlan,
   def rhs = None
 
   def availableSymbols: Set[IdName] = left.availableSymbols + rel + start + end
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(left = newLhs.getOrElse(throw new IllegalStateException))(solved)
+
 }

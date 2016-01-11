@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{PlannerQuery, QueryGraph, QueryHorizon, Selections, UpdateGraph}
+import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
 
 case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: SemanticTable, returns: Seq[IdName] = Seq.empty)
@@ -42,6 +42,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
     copy(q = q.updateTailOrSelf(_.withTail(newTail)))
   }
 
+  // TODO:H We need to take into account new symbols produced by UpdateGraphs
   def currentlyAvailableVariables: Set[IdName] = q.allPlannerQueries.flatMap(pq =>
     pq.allQueryGraphs.flatMap(_.allCoveredIds) ++ pq.horizon.exposedSymbols(pq.queryGraph)).toSet
 

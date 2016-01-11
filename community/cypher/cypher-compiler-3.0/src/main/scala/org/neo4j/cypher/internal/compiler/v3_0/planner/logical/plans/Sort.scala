@@ -30,4 +30,8 @@ case class Sort(left: LogicalPlan, sortItems: Seq[SortDescription])
   val rhs = None
 
   def availableSymbols = left.availableSymbols
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(left = newLhs.getOrElse(throw new IllegalStateException))(solved)
+
 }

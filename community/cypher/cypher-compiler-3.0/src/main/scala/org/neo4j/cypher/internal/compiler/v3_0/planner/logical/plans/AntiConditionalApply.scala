@@ -28,4 +28,7 @@ case class AntiConditionalApply(left: LogicalPlan, right: LogicalPlan, items: Se
   val rhs = Some(right)
 
   def availableSymbols = left.availableSymbols ++ right.availableSymbols ++ items
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(left = newLhs.get, right = newRhs.get)(solved)
 }

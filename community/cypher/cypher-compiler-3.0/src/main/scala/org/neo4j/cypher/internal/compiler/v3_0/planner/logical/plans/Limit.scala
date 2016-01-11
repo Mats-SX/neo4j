@@ -31,6 +31,10 @@ case class Limit(left: LogicalPlan, count: Expression, ties: Ties)
 
   override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
     copy(count = f(left.availableSymbols, count))(solved)
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(left = newLhs.getOrElse(throw new IllegalStateException))(solved)
+
 }
 
 // Using a trait instead of a bool to make the code more readable

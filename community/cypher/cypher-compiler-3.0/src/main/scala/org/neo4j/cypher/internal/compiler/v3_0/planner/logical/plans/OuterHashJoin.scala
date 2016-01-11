@@ -29,4 +29,8 @@ case class OuterHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPl
   val rhs = Some(right)
 
   val availableSymbols = left.availableSymbols ++ right.availableSymbols
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(left = newLhs.getOrElse(throw new IllegalStateException), right = newRhs.getOrElse(throw new IllegalStateException))(solved)
+
 }

@@ -38,4 +38,8 @@ case class ValueHashJoin(left: LogicalPlan, right: LogicalPlan, join: Equals)
     val symbols: Set[IdName] = availableSymbols
     copy(join = f(symbols, join).asInstanceOf[Equals])(solved)
   }
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(left = newLhs.getOrElse(throw new IllegalStateException), right = newRhs.getOrElse(throw new IllegalStateException))(solved)
+
 }

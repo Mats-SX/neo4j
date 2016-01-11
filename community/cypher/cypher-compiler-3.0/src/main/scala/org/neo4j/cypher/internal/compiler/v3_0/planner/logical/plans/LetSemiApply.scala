@@ -23,11 +23,21 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, P
 
 case class LetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName)
                        (val solved: PlannerQuery with CardinalityEstimation)
-  extends AbstractLetSemiApply(left, right, idName, solved) with LogicalPlanWithoutExpressions
+  extends AbstractLetSemiApply(left, right, idName, solved) with LogicalPlanWithoutExpressions {
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(left = newLhs.getOrElse(throw new IllegalStateException), right = newRhs.getOrElse(throw new IllegalStateException))(solved)
+
+}
 
 case class LetAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName)
                            (val solved: PlannerQuery with CardinalityEstimation)
-  extends AbstractLetSemiApply(left, right, idName, solved) with LogicalPlanWithoutExpressions
+  extends AbstractLetSemiApply(left, right, idName, solved) with LogicalPlanWithoutExpressions {
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(left = newLhs.getOrElse(throw new IllegalStateException), right = newRhs.getOrElse(throw new IllegalStateException))(solved)
+
+}
 
 abstract class AbstractLetSemiApply(left: LogicalPlan, right: LogicalPlan,
                                     idName: IdName, solved: PlannerQuery with CardinalityEstimation)

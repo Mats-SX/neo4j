@@ -30,11 +30,36 @@ import scala.collection.GenTraversableOnce
 
 case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean, returns: Seq[IdName])
 
-case class PlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
-                        updateGraph: UpdateGraph = UpdateGraph.empty,
-                        horizon: QueryHorizon = QueryProjection.empty,
-                        tail: Option[PlannerQuery] = None)
-  extends PageDocFormatting {
+case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
+                               updateGraph: UpdateGraph = UpdateGraph.empty,
+                               horizon: QueryHorizon = QueryProjection.empty,
+                               tail: Option[PlannerQuery] = None) extends PlannerQuery {
+  // This is here to stop usage of copy from the outside
+  override protected def copy(queryGraph: QueryGraph = queryGraph,
+                              updateGraph: UpdateGraph = updateGraph,
+                              horizon: QueryHorizon = horizon,
+                              tail: Option[PlannerQuery] = tail) =
+    RegularPlannerQuery(queryGraph, updateGraph, horizon, tail)
+}
+
+case class MergePlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
+                             updateGraph: UpdateGraph = UpdateGraph.empty,
+                             horizon: QueryHorizon = QueryProjection.empty,
+                             tail: Option[PlannerQuery] = None) extends PlannerQuery {
+  // This is here to stop usage of copy from the outside
+  override protected def copy(queryGraph: QueryGraph = queryGraph,
+                              updateGraph: UpdateGraph = updateGraph,
+                              horizon: QueryHorizon = horizon,
+                              tail: Option[PlannerQuery] = tail) =
+    MergePlannerQuery(queryGraph, updateGraph, horizon, tail)
+}
+
+sealed trait PlannerQuery extends PageDocFormatting {
+  val queryGraph: QueryGraph
+  val updateGraph: UpdateGraph
+  val horizon: QueryHorizon
+  val tail: Option[PlannerQuery]
+
   // with ToPrettyString[PlannerQuery] {
 
   //  def toDefaultPrettyString(formatter: DocFormatter) =
@@ -117,7 +142,7 @@ case class PlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
   def ++(other: PlannerQuery): PlannerQuery = {
     (this.horizon, other.horizon) match {
       case (a: RegularQueryProjection, b: RegularQueryProjection) =>
-        PlannerQuery(
+        RegularPlannerQuery(
           horizon = a ++ b,
           queryGraph = queryGraph ++ other.queryGraph,
           updateGraph = updateGraph ++ other.updateGraph,
@@ -136,10 +161,10 @@ case class PlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
   }
 
   // This is here to stop usage of copy from the outside
-  private def copy(queryGraph: QueryGraph = queryGraph,
-                   updateGraph: UpdateGraph = updateGraph,
-                   horizon: QueryHorizon = horizon,
-                   tail: Option[PlannerQuery] = tail) = PlannerQuery(queryGraph, updateGraph, horizon, tail)
+  protected def copy(queryGraph: QueryGraph = queryGraph,
+                     updateGraph: UpdateGraph = updateGraph,
+                     horizon: QueryHorizon = horizon,
+                     tail: Option[PlannerQuery] = tail): PlannerQuery
 
   def foldMap(f: (PlannerQuery, PlannerQuery) => PlannerQuery): PlannerQuery = tail match {
     case None => this
@@ -163,8 +188,11 @@ case class PlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
     recurse(in, this)
   }
 
-  //Returns list of querygraph of planner query and all of its tails
+  //Returns a list of query graphs from this plannerquery and all of its tails
   def allQueryGraphs: Seq[QueryGraph] = allPlannerQueries.map(_.queryGraph)
+
+  //Returns a list of update graphs from this plannerquery and all of its tails
+  def allUpdateGraphs: Seq[UpdateGraph] = allPlannerQueries.map(_.updateGraph)
 
 
   //Returns list of planner query and all of its tails
@@ -182,11 +210,18 @@ case class PlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
 }
 
 object PlannerQuery {
-  val empty = PlannerQuery()
+  val empty = RegularPlannerQuery()
 
   def coveredIdsForPatterns(patternNodeIds: Set[IdName], patternRels: Set[PatternRelationship]) = {
     val patternRelIds = patternRels.flatMap(_.coveredIds)
     patternNodeIds ++ patternRelIds
+  }
+
+  def asMergePlannerQuery(plannerQuery: PlannerQuery) = plannerQuery match {
+    case RegularPlannerQuery(queryGraph, updateGraph, horizon, tail) =>
+      MergePlannerQuery(queryGraph, updateGraph, horizon, tail)
+    case _: MergePlannerQuery =>
+      plannerQuery
   }
 }
 
@@ -198,7 +233,19 @@ trait CardinalityEstimation {
 
 object CardinalityEstimation {
   def lift(plannerQuery: PlannerQuery, cardinality: Cardinality) =
-    new PlannerQuery(plannerQuery.queryGraph, plannerQuery.updateGraph, plannerQuery.horizon, plannerQuery.tail) with CardinalityEstimation {
-      val estimatedCardinality = cardinality
+    if (plannerQuery.isInstanceOf[MergePlannerQuery])
+      new MergePlannerQuery(plannerQuery.queryGraph, plannerQuery.updateGraph, plannerQuery.horizon, plannerQuery.tail) with CardinalityEstimation {
+        val estimatedCardinality = cardinality
+      }
+    else {
+      new RegularPlannerQuery(plannerQuery.queryGraph, plannerQuery.updateGraph, plannerQuery.horizon,
+                              plannerQuery.tail) with CardinalityEstimation {
+        val estimatedCardinality = cardinality
+      }
     }
+}
+
+object Debug {
+  val VERBOSE = false
+  def dprintln(x: Any) = if (VERBOSE) println(x) else Unit
 }

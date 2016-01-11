@@ -166,9 +166,14 @@ trait NewPlannerTestSupport extends CypherTestSupport {
    * Same as executeWithAllPlanners but rolls back all but the final query
    */
   def updateWithBothPlanners(queryText: String, params: (String, Any)*): InternalExecutionResult = {
+    println(executeWithCostPlannerOnly(s"EXPLAIN $queryText").executionPlanDescription()) // TODO: FIXME Remove debug print
+
     val ruleResult = graph.rollback(innerExecute(s"CYPHER planner=rule $queryText", params: _*))
+    println(ruleResult.executionPlanDescription())
     val eagerCostResult = graph.rollback(innerExecute(s"CYPHER updateStrategy=eager $queryText", params: _*))
+
     val costResult = executeWithCostPlannerOnly(queryText, params: _*)
+//    println(costResult.executionPlanDescription()) // TODO:H FIXME Remove debug print
     assertResultsAreSame(eagerCostResult, costResult, queryText,
       "Diverging results between eager and non-eager results")
     assertResultsAreSame(ruleResult, costResult, queryText, "Diverging results between rule and cost planners")

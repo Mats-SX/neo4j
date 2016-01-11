@@ -46,6 +46,8 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
     override def mapExpressions(f: (Set[IdName], Expression) => Expression) = ???
 
     override def strictness = ???
+
+    override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan = ???
   }
 
   abstract class FakeRonjaPipe extends FakePipe(Iterator.empty) with RonjaPipe {

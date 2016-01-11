@@ -30,4 +30,8 @@ case class FindShortestPaths(left: LogicalPlan, shortestPath: ShortestPathPatter
   def rhs = None
 
   def availableSymbols = left.availableSymbols ++ shortestPath.availableSymbols
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(left = newLhs.getOrElse(throw new IllegalStateException))(solved)
+
 }

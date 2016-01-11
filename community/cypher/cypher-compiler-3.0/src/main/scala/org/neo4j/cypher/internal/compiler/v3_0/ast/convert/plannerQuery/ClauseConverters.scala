@@ -263,19 +263,38 @@ object ClauseConverters {
     clause.pattern.patternParts.foldLeft(acc) {
       //MERGE (n :L1:L2 {prop: 42})
       case (builder, EveryPath(NodePattern(Some(id), labels, props))) =>
+        val currentlyAvailableVariables = acc.currentlyAvailableVariables
         val matchGraph = QueryGraph(
           patternNodes = Set(IdName.fromVariable(id)),
           selections = Selections.from(labels.map(l => HasLabels(id, Seq(l))(id.position)) ++ toPropertySelection(id,
             toPropertyMap(props)) :_*),
-          argumentIds = acc.currentlyAvailableVariables
+          argumentIds = currentlyAvailableVariables
         )
-      builder
-          .amendUpdateGraph(ug =>
-            ug.addMutatingPatterns(
-              MergeNodePattern(CreateNodePattern(IdName.fromVariable(id), labels, props),
-                matchGraph, onCreate, onMatch)))
+
+        val queryProjection =
+          asQueryProjection(distinct = false,
+                            items = QueryProjection.forIds(currentlyAvailableVariables))
+
+        builder
+          //          .withHorizon(queryProjection)
+          .withTail(
+            MergePlannerQuery(matchGraph,
+                             //            MergePlannerQuery(QueryGraph.empty,
+                              UpdateGraph(Seq(
+                                MergeNodePattern(CreateNodePattern(IdName.fromVariable(id), labels, props),
+                                               matchGraph, onCreate, onMatch)))))
+          //          .amendQueryGraph(_.addArgumentIds(currentlyAvailableVariables.toSeq))
+          .withTail(RegularPlannerQuery())
+        //        builder
+        //          .amendUpdateGraph(ug =>
+        //                              ug.addMutatingPatterns(
+        //                                MergeNodePattern(CreateNodePattern(IdName.fromVariable(id), labels, props),
+        //                                                 matchGraph, onCreate, onMatch)))
+
       //MERGE (n)-[r: R]->(m)
       case (builder, EveryPath(pattern: RelationshipChain)) =>
+        val currentlyAvailableVariables = acc.currentlyAvailableVariables
+
         val (nodes, rels) = allCreatePatterns(pattern)
         //remove duplicates from loops, (a:L)-[:ER1]->(a)
         val dedupedNodes = dedup(nodes)
@@ -311,8 +330,16 @@ object ClauseConverters {
         )
 
         builder
-          .amendUpdateGraph(ug => ug
-            .addMutatingPatterns(MergeRelationshipPattern(nodesToCreate, rels, matchGraph, onCreate, onMatch)))
+          .withTail(
+            MergePlannerQuery(matchGraph,
+                              UpdateGraph(Seq(
+                                MergeRelationshipPattern(nodesToCreate, rels, matchGraph, onCreate, onMatch)))))
+          //          .amendQueryGraph(_.addArgumentIds(currentlyAvailableVariables.toSeq))
+          .withTail(RegularPlannerQuery())
+
+//        builder
+//          .amendUpdateGraph(ug => ug
+//            .addMutatingPatterns(MergeRelationshipPattern(nodesToCreate, rels, matchGraph, onCreate, onMatch)))
 
       case _ => throw new CantHandleQueryException("not supported yet")
     }
@@ -359,7 +386,7 @@ object ClauseConverters {
 
       builder.
         withHorizon(queryProjection).
-        withTail(PlannerQuery(QueryGraph(selections = selections)))
+        withTail(RegularPlannerQuery(QueryGraph(selections = selections)))
 
     case _ =>
       throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
