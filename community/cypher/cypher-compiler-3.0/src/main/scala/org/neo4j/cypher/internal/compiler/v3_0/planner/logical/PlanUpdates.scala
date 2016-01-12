@@ -41,69 +41,80 @@ case object PlanUpdates
         planUpdate(query, plan, pattern)
     })
 
-  private def planUpdate(query: PlannerQuery, source: LogicalPlan, pattern: MutatingPattern)(implicit context: LogicalPlanningContext): LogicalPlan = pattern match {
-    //CREATE ()
-    case p: CreateNodePattern => context.logicalPlanProducer.planCreateNode(source, p)
-    //CREATE (a)-[:R]->(b)
-    case p: CreateRelationshipPattern => context.logicalPlanProducer.planCreateRelationship(source, p)
-    //MERGE ()
-    case p: MergeNodePattern =>
-      val mergePlan = planMergeNodeWritePart(query, source, Seq(p.createNodePattern), Seq.empty, p.onCreate, p.onMatch)
-      //we have to force the plan to solve what we actually solve
-      val solved = context.logicalPlanProducer.estimatePlannerQuery(
-        source.solved.amendUpdateGraph(u => u.addMutatingPatterns(p)))
-      mergePlan.updateSolved(solved)
+  private def planUpdate(query: PlannerQuery, source: LogicalPlan, pattern: MutatingPattern)(implicit context: LogicalPlanningContext): LogicalPlan = {
+    def solvedMergePattern() = {
+      val solved = PlannerQuery.asMergePlannerQuery(
+        source.solved
+          .amendQueryGraph(q => q.addPatternNodes(q.optionalMatches.head.patternNodes.toSeq: _*)
+              .addPatternRelationships(q.optionalMatches.head.patternRelationships.toSeq)
+              .withOptionalMatches(Seq.empty)
+              .withArgumentIds(query.queryGraph.argumentIds)
+              .withSelections(query.queryGraph.selections))
+          .amendUpdateGraph(u => u.addMutatingPatterns(pattern)))
+      val solvedWithEstimate = context.logicalPlanProducer.estimatePlannerQuery(solved)
+      solvedWithEstimate
+    }
 
-    //MERGE (a)-[:T]->(b)
-    case p: MergeRelationshipPattern =>
-      val mergePlan = planMergeNodeWritePart(query, source, p.createNodePatterns, p.createRelPatterns, p.onCreate, p.onMatch)
-      //we have to force the plan to solve what we actually solve
-      val solved = context.logicalPlanProducer.estimatePlannerQuery(
-        source.solved.amendUpdateGraph(u => u.addMutatingPatterns(p)))
-      mergePlan.updateSolved(solved)
+    pattern match {
+      //CREATE ()
+      case p: CreateNodePattern => context.logicalPlanProducer.planCreateNode(source, p)
+      //CREATE (a)-[:R]->(b)
+      case p: CreateRelationshipPattern => context.logicalPlanProducer.planCreateRelationship(source, p)
+      //MERGE ()
+      case p: MergeNodePattern =>
+        val mergePlan = planMergeWritePart(query, source, Seq(p.createNodePattern), Seq.empty, p.onCreate, p.onMatch)
+        //we have to force the plan to solve what we actually solve
+        mergePlan.updateSolved(solvedMergePattern)
+      //MERGE (a)-[:T]->(b)
+      case p: MergeRelationshipPattern =>
+        val mergePlan = planMergeWritePart(query, source, p.createNodePatterns, p.createRelPatterns, p.onCreate, p.onMatch)
+        //we have to force the plan to solve what we actually solve
+        mergePlan.updateSolved(solvedMergePattern)
+      //SET n:Foo:Bar
+      case pattern: SetLabelPattern => context.logicalPlanProducer.planSetLabel(source, pattern)
+      //SET n.prop = 42
+      case pattern: SetNodePropertyPattern =>
+        context.logicalPlanProducer.planSetNodeProperty(source, pattern)
+      //SET r.prop = 42
+      case pattern: SetRelationshipPropertyPattern =>
+        context.logicalPlanProducer.planSetRelationshipProperty(source, pattern)
+      //SET n.prop += {}
+      case pattern: SetNodePropertiesFromMapPattern =>
+        context.logicalPlanProducer.planSetNodePropertiesFromMap(source, pattern)
+      //SET r.prop = 42
+      case pattern: SetRelationshipPropertiesFromMapPattern =>
+        context.logicalPlanProducer.planSetRelationshipPropertiesFromMap(source, pattern)
+      //REMOVE n:Foo:Bar
+      case pattern: RemoveLabelPattern => context.logicalPlanProducer.planRemoveLabel(source, pattern)
+      //DELETE a
+      case p: DeleteExpression =>
+        val delete = p.expression match {
+          //DELETE user
+          case Variable(n) if context.semanticTable.isNode(n) =>
+            context.logicalPlanProducer.planDeleteNode(source, p)
+          //DELETE rel
+          case Variable(r) if context.semanticTable.isRelationship(r) =>
+            context.logicalPlanProducer.planDeleteRelationship(source, p)
+          //DELETE path
+          case PathExpression(e)  =>
+            context.logicalPlanProducer.planDeletePath(source, p)
+          //DELETE users[{i}]
+          case ContainerIndex(Variable(n),indexExpr) if context.semanticTable.isNodeCollection(n) =>
+            context.logicalPlanProducer.planDeleteNode(source, p)
+          //DELETE rels[{i}]
+          case ContainerIndex(Variable(r),indexExpr) if context.semanticTable.isRelationshipCollection(r) =>
+            context.logicalPlanProducer.planDeleteRelationship(source, p)
+          //DELETE expr
+          case expr =>
+            context.logicalPlanProducer.planDeleteExpression(source, p)
+        }
 
-    //SET n:Foo:Bar
-    case pattern: SetLabelPattern => context.logicalPlanProducer.planSetLabel(source, pattern)
-    //SET n.prop = 42
-    case pattern: SetNodePropertyPattern =>
-      context.logicalPlanProducer.planSetNodeProperty(source, pattern)
-    //SET r.prop = 42
-    case pattern: SetRelationshipPropertyPattern =>
-      context.logicalPlanProducer.planSetRelationshipProperty(source, pattern)
-    //SET n.prop += {}
-    case pattern: SetNodePropertiesFromMapPattern =>
-      context.logicalPlanProducer.planSetNodePropertiesFromMap(source, pattern)
-    //SET r.prop = 42
-    case pattern: SetRelationshipPropertiesFromMapPattern =>
-      context.logicalPlanProducer.planSetRelationshipPropertiesFromMap(source, pattern)
-    //REMOVE n:Foo:Bar
-    case pattern: RemoveLabelPattern => context.logicalPlanProducer.planRemoveLabel(source, pattern)
-    //DELETE a
-    case p: DeleteExpression =>
-      val delete = p.expression match {
-        //DELETE user
-        case Variable(n) if context.semanticTable.isNode(n) =>
-          context.logicalPlanProducer.planDeleteNode(source, p)
-        //DELETE rel
-        case Variable(r) if context.semanticTable.isRelationship(r) =>
-          context.logicalPlanProducer.planDeleteRelationship(source, p)
-        //DELETE path
-        case PathExpression(e)  =>
-          context.logicalPlanProducer.planDeletePath(source, p)
-        //DELETE users[{i}]
-        case ContainerIndex(Variable(n),indexExpr) if context.semanticTable.isNodeCollection(n) =>
-          context.logicalPlanProducer.planDeleteNode(source, p)
-        //DELETE rels[{i}]
-        case ContainerIndex(Variable(r),indexExpr) if context.semanticTable.isRelationshipCollection(r) =>
-          context.logicalPlanProducer.planDeleteRelationship(source, p)
-        //DELETE expr
-        case expr =>
-          context.logicalPlanProducer.planDeleteExpression(source, p)
-      }
-
-      if (context.config.updateStrategy.alwaysEager || query.updateGraph.mergeDeleteOverlap)
-        context.logicalPlanProducer.planEager(delete)
-      else delete
+// TODO:H This is not needed now (from Pontus)
+//        if (context.config.updateStrategy.alwaysEager || query.updateGraph.deleteOverlapWithMergeInSelf)
+//          context.logicalPlanProducer.planEager(delete)
+//        else delete
+        delete
+    }
   }
 
   /*
@@ -152,10 +163,10 @@ case object PlanUpdates
     apply
   }
 
-  def planMergeNodeWritePart(query: PlannerQuery, source: LogicalPlan, createNodePatterns: Seq[CreateNodePattern],
-                             createRelationshipPatterns: Seq[CreateRelationshipPattern],
-                             onCreate: Seq[SetMutatingPattern], onMatch: Seq[SetMutatingPattern])
-                            (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planMergeWritePart(query: PlannerQuery, source: LogicalPlan, createNodePatterns: Seq[CreateNodePattern],
+                         createRelationshipPatterns: Seq[CreateRelationshipPattern],
+                         onCreate: Seq[SetMutatingPattern], onMatch: Seq[SetMutatingPattern])
+                        (implicit context: LogicalPlanningContext): LogicalPlan = {
 
     // TODO:H Do we need this instead of context?
     //    val innerContext: LogicalPlanningContext = context.recurse(source)

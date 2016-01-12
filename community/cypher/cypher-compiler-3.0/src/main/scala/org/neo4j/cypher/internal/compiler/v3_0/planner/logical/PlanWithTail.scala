@@ -124,7 +124,7 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
             //if (!plannerQuery.isInstanceOf[MergePlannerQuery] && // Skip this eagerness for MergePlannerQuery
           val newLhs =
             if (alwaysEager ||
-              plannerQuery.allUpdateGraphs.exists(lastPlannerQuery.updateGraph.deleteOverlapWithMergeNodeIn) ||
+              plannerQuery.allUpdateGraphs.exists(lastPlannerQuery.updateGraph.deleteOverlapWithMergeIn) ||
               (!lastPlannerQuery.writeOnly && !plannerQuery.isInstanceOf[MergePlannerQuery] &&
                 plannerQuery.allQueryGraphs.exists(lastPlannerQuery.updateGraph.overlaps)))
               context.logicalPlanProducer.planEager(lhs)
