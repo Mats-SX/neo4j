@@ -166,10 +166,10 @@ trait NewPlannerTestSupport extends CypherTestSupport {
    * Same as executeWithAllPlanners but rolls back all but the final query
    */
   def updateWithBothPlanners(queryText: String, params: (String, Any)*): InternalExecutionResult = {
-    println(executeWithCostPlannerOnly(s"EXPLAIN $queryText").executionPlanDescription()) // TODO: FIXME Remove debug print
+//    println(executeWithCostPlannerOnly(s"EXPLAIN $queryText").executionPlanDescription()) // TODO: FIXME Remove debug print
 
     val ruleResult = graph.rollback(innerExecute(s"CYPHER planner=rule $queryText", params: _*))
-    println(ruleResult.executionPlanDescription())
+//    println(ruleResult.executionPlanDescription())
     val eagerCostResult = graph.rollback(innerExecute(s"CYPHER updateStrategy=eager $queryText", params: _*))
 
     val costResult = executeWithCostPlannerOnly(queryText, params: _*)

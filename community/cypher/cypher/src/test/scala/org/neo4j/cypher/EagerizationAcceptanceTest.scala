@@ -25,6 +25,11 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 
 import scala.util.matching.Regex
 
+////////////////////////////////////////////////////////
+// TODO:H Checklist
+// [ ] Fix exception types/messages
+////////////////////////////////////////////////////////
+
 class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrivenPropertyChecks with QueryStatisticsTestSupport with NewPlannerTestSupport {
   val VERBOSE = true
   val VERBOSE_INCLUDE_PLAN_DESCRIPTION = true
@@ -1325,8 +1330,8 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createLabeledNode("B")
     createLabeledNode("B")
     // TODO:H
-    //val query = "MATCH (n:A) CREATE (m:C) WITH * MATCH (o:B), (p:C) SET p:B RETURN count(*)"
-    val query = "CREATE (a {p: 1}) MERGE (b {v: a.p})"
+    val query = "MATCH (n:A) CREATE (m:C) WITH * MATCH (o:B), (p:C) SET p:B RETURN count(*)"
+    //val query = "CREATE (a {p: 1}) MERGE (b {v: a.p})"
     val result = updateWithBothPlanners(query)
     result.columnAs[Long]("count(*)").next shouldBe 8
     assertStats(result, labelsAdded = 4, nodesCreated = 2)

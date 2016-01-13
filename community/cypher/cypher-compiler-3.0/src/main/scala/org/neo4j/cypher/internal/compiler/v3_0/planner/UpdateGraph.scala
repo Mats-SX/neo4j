@@ -229,10 +229,16 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
    * Checks for overlap between identifiers being read in query graph
    * and what is deleted here
    */
+  // TODO:H argumentIds can only be considered when we delete by an expression
   def deleteOverlap(qg: QueryGraph): Boolean = {
-    val identifiersToRead = qg.patternNodes ++ qg.patternRelationships.map(_.name) ++ qg.argumentIds
+    //val identifiersToRead = qg.patternNodes ++ qg.patternRelationships.map(_.name) ++ qg.argumentIds
+    val identifiersToRead = qg.patternNodes ++ qg.patternRelationships.map(_.name)
     (identifiersToRead intersect identifiersToDelete).nonEmpty
   }
+//  def deleteOverlap(qg: QueryGraph): Boolean = {
+//    val identifiersToRead = qg.patternNodes ++ qg.patternRelationships.map(_.name)
+//    (identifiersToRead intersect identifiersToDelete).nonEmpty
+//  }
 
   def addMutatingPatterns(patterns: MutatingPattern *) =
     copy(mutatingPatterns = this.mutatingPatterns ++ patterns)

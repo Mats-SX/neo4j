@@ -47,7 +47,7 @@ case object unnestApply extends Rewriter {
    */
 
   private val instance: Rewriter = Rewriter.lift {
-//    case x => x
+//    case x => x // TODO:H This is not safe anymore :(
 
     // L Ax Arg => L
     case Apply(lhs, _: Argument) =>

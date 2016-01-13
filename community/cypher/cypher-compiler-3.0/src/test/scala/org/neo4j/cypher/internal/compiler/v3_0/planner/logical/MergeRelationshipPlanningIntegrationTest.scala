@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyType, LazyLabel}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyType
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{LabelName, RelTypeName, Collection, In, MapExpression, Property, PropertyKeyName, SignedDecimalIntegerLiteral, Variable}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{LabelName, RelTypeName}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -37,7 +37,8 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
     val expand = Expand(nodeByLabelScan, aId, SemanticDirection.OUTGOING, Seq(RelTypeName("R")(pos)), bId, rId)(solved)
 
     val optional = Optional(expand)(solved)
-    val createNodeA = MergeCreateNode(SingleRow()(solved), aId, Seq(LabelName("A")(pos)), None)(solved)
+    val argument = Argument(Set(aId))(solved)(Map.empty)
+    val createNodeA = MergeCreateNode(argument, aId, Seq(LabelName("A")(pos)), None)(solved)
     val createNodeB = MergeCreateNode(createNodeA, bId, Seq.empty, None)(solved)
 
     val onCreate = MergeCreateRelationship(createNodeB, rId, aId, LazyType("R"), bId, None)(solved)

@@ -564,4 +564,10 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     result.toList should not contain Map("t2.name" -> "rel1")
     result.toList should not contain Map("t2.name" -> "rel2")
   }
+
+  test("apa") {
+    val result = executeWithCostPlannerOnly("MERGE (n0:L1)-[:T2 {prop3:4}]->(n5:L6)<-[r7 :T8 {prop9:10}]-()-[:T11]->(n12)-[r13 :T14 {prop15:16}]->()<-[:T17 {prop18:19}]-(:L20)<-[r21 :T22 {prop23:24}]-(n25)<-[r26:T27]-(n28)")
+    println(result.executionPlanDescription())
+    println(result.dumpToString())
+  }
 }

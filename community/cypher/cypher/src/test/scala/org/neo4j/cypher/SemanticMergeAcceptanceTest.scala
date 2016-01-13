@@ -40,16 +40,23 @@ class SemanticMergeAcceptanceTest
 
       whenever(pattern.nonEmpty) {
         val patternString = pattern.map(_.string).mkString
-        withClue(s"failing on pattern $patternString") {
-          //update
-          updateWithBothPlanners(s"MERGE $patternString")
 
-          //find created pattern (cannot return * since everything might be unnamed)
-          val result = executeWithAllPlannersAndRuntimes(s"MATCH $patternString RETURN 42")
-          result.toList should have size 1
+        try {
+          withClue(s"failing on pattern $patternString") {
+            //update
+            updateWithBothPlanners(s"MERGE $patternString")
 
-          //clean up
-          updateWithBothPlanners(s"MATCH (n) DETACH DELETE n")
+            //find created pattern (cannot return * since everything might be unnamed)
+            val result = executeWithAllPlannersAndRuntimes(s"MATCH $patternString RETURN 42")
+            result.toList should have size 1
+
+            //clean up
+            updateWithBothPlanners(s"MATCH (n) DETACH DELETE n")
+          }
+        } catch {
+          case x: Throwable =>
+            println(s"failing on pattern $patternString")
+            throw x
         }
       }
     }

@@ -37,8 +37,7 @@ abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel]
   protected def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {
     input.map { row =>
-      val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
-      createNode(row ++ baseContext, state)
+      createNode(row, state)
     }
   }
 

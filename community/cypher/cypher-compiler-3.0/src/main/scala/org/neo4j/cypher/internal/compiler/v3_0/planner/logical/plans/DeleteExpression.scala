@@ -30,7 +30,13 @@ case class DeleteExpression(source: LogicalPlan, expression: Expression)
 
   override def availableSymbols: Set[IdName] = source.availableSymbols
 
+//  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
+//    copy(expression = f(source.availableSymbols, expression))(solved)
+
   override def rhs: Option[LogicalPlan] = None
 
   override def strictness: StrictnessMode = source.strictness
+
+  override def newWithChildren(newLhs: Option[LogicalPlan], newRhs: Option[LogicalPlan]): LogicalPlan =
+    copy(source = newLhs.getOrElse(throw new IllegalStateException))(solved)
 }

@@ -30,6 +30,9 @@ case class DeleteNode(source: LogicalPlan, expression: Expression)
 
   override def availableSymbols: Set[IdName] = source.availableSymbols
 
+//  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
+//    copy(expression = f(source.availableSymbols, expression))(solved)
+
   override def rhs: Option[LogicalPlan] = None
 
   override def strictness: StrictnessMode = source.strictness

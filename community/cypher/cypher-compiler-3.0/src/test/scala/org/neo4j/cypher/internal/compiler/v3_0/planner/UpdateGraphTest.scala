@@ -158,6 +158,7 @@ class UpdateGraphTest extends CypherFunSuite {
     ug.overlaps(qg) shouldBe true
   }
 
+  // TODO:H FIXME
   test("overlap when reading and deleting with collections") {
     //... WITH collect(a) as col DELETE col[0]
     val qg = QueryGraph(argumentIds = Set(IdName("col")))

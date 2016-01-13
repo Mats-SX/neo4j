@@ -271,9 +271,9 @@ object ClauseConverters {
           argumentIds = currentlyAvailableVariables
         )
 
-        val queryProjection =
-          asQueryProjection(distinct = false,
-                            items = QueryProjection.forIds(currentlyAvailableVariables))
+//        val queryProjection =
+//          asQueryProjection(distinct = false,
+//                            items = QueryProjection.forIds(currentlyAvailableVariables))
 
         builder
           //          .withHorizon(queryProjection)
