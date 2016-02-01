@@ -19,26 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_0.Rewriter
-import org.neo4j.cypher.internal.frontend.v3_0.helpers.fixedPoint
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.Projection
+import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 
-/*
- * Rewriters that live here are required to adhere to the contract of
- * receiving a valid plan and producing a valid plan. It should be possible
- * to disable any and all of these rewriters, and still produce correct behavior.
- */
-case class LogicalPlanRewriter(rewriterSequencer: String => RewriterStepSequencer) extends Rewriter {
-  val instance = fixedPoint(rewriterSequencer("LogicalPlanRewriter")(
-    fuseSelections,
-    fuseProjections,
-    unnestApply,
-    cleanUpEager,
-    simplifyEquality,
-    unnestOptional,
-    predicateRemovalThroughJoins,
-    removeIdenticalPlans
-  ).rewriter)
+case object fuseProjections extends Rewriter {
 
-  def apply(that: AnyRef) = instance(that)
+  def apply(input: AnyRef) = bottomUp(instance).apply(input)
+
+  private val instance: Rewriter = Rewriter.lift {
+    case outer@Projection(inner@Projection(lhs, innerExpr), outerExpr) =>
+      Projection(lhs, innerExpr ++ outerExpr)(outer.solved)
+  }
 }

@@ -23,6 +23,49 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
 class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
+  test("projections directly on top of each other should be fused by the planner") {
+    val query = """WITH 1 AS one
+                  |WITH 2 AS two
+                  |WITH 3 AS three
+                  |RETURN three
+                """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result should haveProjections(1)
+    result.toList should equal(List(Map("three" -> 3)))
+  }
+
+  test("fused projections should project the correct variables") {
+    val query = """WITH 1 AS one
+                  |WITH 2 AS one
+                  |WITH 3 AS three, one
+                  |RETURN one
+                """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("one" -> 2)))
+    result should haveProjections(1)
+  }
+
+  test("projections not directly on top of each other should not be fused by the planner") {
+    createNode()
+
+    val query = """WITH 1 AS one
+                  |MATCH (x)
+                  |WITH 2 AS two
+                  |MATCH (y)
+                  |WITH 3 as three, two
+                  |RETURN two
+                """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result should haveProjections(3)
+    result.toList should equal(List(Map("two" -> 2)))
+  }
+
   test("only passing on pattern nodes work") {
     val a = createNode()
     val b = createNode()

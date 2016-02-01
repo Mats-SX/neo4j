@@ -97,6 +97,16 @@ abstract class ExecutionEngineFunSuite
     }
   }
 
+  def haveProjections(times: Int): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
+    override def apply(result: InternalExecutionResult): MatchResult = {
+      val plan: InternalPlanDescription = result.executionPlanDescription()
+      MatchResult(
+        matches = plan.find("Projection").size == times,
+        rawFailureMessage = s"Plan should have $times Projection operators:\n$plan",
+        rawNegatedFailureMessage = s"Plan should have $times Projection operators:\n$plan")
+    }
+  }
+
   def haveCount(count: Int): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
     override def apply(result: InternalExecutionResult): MatchResult = {
       MatchResult(
