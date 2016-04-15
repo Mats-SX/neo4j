@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.factory;
 
+import java.io.File;
 import java.util.Collections;
 
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -32,6 +33,16 @@ public class TestHighlyAvailableGraphDatabaseFactory extends HighlyAvailableGrap
         super.configure( builder );
         builder.setConfig( ClusterManager.CONFIG_FOR_SINGLE_JVM_CLUSTER );
         builder.setConfig( GraphDatabaseSettings.store_internal_log_level, "DEBUG" );
+    }
+
+    @Override
+    public GraphDatabaseBuilder newEmbeddedDatabaseBuilder( File storeDir )
+    {
+        GraphDatabaseBuilder builder = super.newEmbeddedDatabaseBuilder( storeDir );
+        // set the neo4j_home to a directory _next to_ the store directory
+        builder.setConfig( GraphDatabaseSettings.neo4j_home,
+                new File( storeDir.getParent(), storeDir.getName() + "misc" ).getAbsolutePath() );
+        return builder;
     }
 
     public TestHighlyAvailableGraphDatabaseFactory addKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
