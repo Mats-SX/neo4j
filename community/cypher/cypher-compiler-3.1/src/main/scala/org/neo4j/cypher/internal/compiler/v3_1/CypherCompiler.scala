@@ -116,7 +116,7 @@ object CypherCompilerFactory {
                                                    procedurePlanProducer, planBuilderMonitor, config.useErrorsOverWarnings)
 
     val execPlanBuilder = new ExecutionPlanBuilder(graph,clock, planBuilder, PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _) )
-    val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](config.queryCacheSize)
+    val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan](config.queryCacheSize)
     monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
@@ -136,7 +136,7 @@ object CypherCompilerFactory {
         typeConverter = typeConverter), typeConverter.asPublicType)
 
     val execPlanBuilder = new ExecutionPlanBuilder(graph, clock, pipeBuilder, PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _))
-    val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](config.queryCacheSize)
+    val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan](config.queryCacheSize)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
 
@@ -155,7 +155,7 @@ case class CypherCompiler(parser: CypherParser,
                           executionPlanBuilder: ExecutionPlanBuilder,
                           astRewriter: ASTRewriter,
                           cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
-                          planCacheFactory: () => LRUCache[Statement, ExecutionPlan],
+                          planCacheFactory: () => LFUCache[Statement, ExecutionPlan],
                           cacheMonitor: CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]],
                           monitors: Monitors) {
 
