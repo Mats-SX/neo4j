@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0.ast.functions
 
+import org.neo4j.cypher.internal.frontend.v3_0.ast.TypeChecker.Signature
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{SimpleTypedFunction, Function}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Function, SimpleTypedFunction}
 
 case object Id extends Function with SimpleTypedFunction {
   def name = "id"

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.frontend.v3_0.ast
 
 import org.neo4j.cypher.internal.frontend.v3_0._
+import org.neo4j.cypher.internal.frontend.v3_0.ast.TypeChecker.Signature
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.{CypherType, TypeSpec}
 
 object Function {
@@ -138,44 +139,13 @@ abstract class Function extends SemanticChecking {
 
 
 trait SimpleTypedFunction { self: Function =>
-  case class Signature(argumentTypes: IndexedSeq[CypherType], outputType: CypherType)
-
   val signatures: Seq[Signature]
 
   private lazy val signatureLengths = signatures.map(_.argumentTypes.length)
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkMinArgs(invocation, signatureLengths.min) chain checkMaxArgs(invocation, signatureLengths.max) chain
-    checkTypes(invocation)
-
-  private def checkTypes(invocation: ast.FunctionInvocation): SemanticCheck = s => {
-    val initSignatures = signatures.filter(_.argumentTypes.length == invocation.arguments.length)
-
-    val (remainingSignatures: Seq[Signature], result) = invocation.arguments.foldLeft((initSignatures, SemanticCheckResult.success(s))) {
-      case (accumulator@(Seq(), _), _) =>
-        accumulator
-      case ((possibilities, r1), arg)  =>
-        val argTypes = possibilities.foldLeft(TypeSpec.none) { _ | _.argumentTypes.head.covariant }
-        val r2 = arg.expectType(argTypes)(r1.state)
-
-        val actualTypes = arg.types(r2.state)
-        val remainingPossibilities = possibilities.filter {
-          sig => actualTypes containsAny sig.argumentTypes.head.covariant
-        } map {
-          sig => sig.copy(argumentTypes = sig.argumentTypes.tail)
-        }
-        (remainingPossibilities, SemanticCheckResult(r2.state, r1.errors ++ r2.errors))
-    }
-
-    val outputType = remainingSignatures match {
-      case Seq() => TypeSpec.all
-      case _     => remainingSignatures.foldLeft(TypeSpec.none) { _ | _.outputType.invariant }
-    }
-    invocation.specifyType(outputType)(result.state) match {
-      case Left(err)    => SemanticCheckResult(result.state, result.errors :+ err)
-      case Right(state) => SemanticCheckResult(state, result.errors)
-    }
-  }
+    TypeChecker(signatures, invocation.arguments, invocation.specifyType)
 }
 
 

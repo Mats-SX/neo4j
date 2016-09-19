@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.frontend.v3_0.ast.functions
 
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Parameter, AggregatingFunction, DoubleLiteral, FunctionInvocation, Literal, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.TypeChecker.Signature
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{AggregatingFunction, DoubleLiteral, FunctionInvocation, Literal, Parameter, SimpleTypedFunction}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{SemanticCheck, SemanticCheckResult, SemanticError}
 

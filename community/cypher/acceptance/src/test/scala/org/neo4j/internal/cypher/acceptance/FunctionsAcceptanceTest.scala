@@ -34,6 +34,15 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result should equal(2)
   }
 
+  test("toInt on a parameter") {
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "RETURN toInt(1 - {p0}) AS result",
+      "p0" -> 1
+    )
+
+    result.toList should equal(List(Map("result" -> 0)))
+  }
+
   test("toInt should work as expected") {
     // Given
     createLabeledNode(Map("age" -> "42"), "Person")

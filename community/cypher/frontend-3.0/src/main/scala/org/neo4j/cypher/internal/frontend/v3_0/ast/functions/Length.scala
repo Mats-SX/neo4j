@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.frontend.v3_0.ast.functions
 
 import org.neo4j.cypher.internal.frontend.v3_0.{SemanticCheckResult, SemanticState}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{FunctionInvocation, Function, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.TypeChecker.Signature
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Function, FunctionInvocation, SimpleTypedFunction}
 import org.neo4j.cypher.internal.frontend.v3_0.notification.LengthOnNonPathNotification
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 

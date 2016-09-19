@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0.ast.functions
 
+import org.neo4j.cypher.internal.frontend.v3_0.ast.TypeChecker.Signature
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{AggregatingFunction, SimpleTypedFunction}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 

@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0.ast
 
-import Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_0.{SemanticError, SemanticCheck, SemanticCheckResult, ast, TypeGenerator, InputPosition}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.frontend.v3_0.ast.TypeChecker.Signature
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.{CypherType, TypeSpec, _}
+import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, SemanticCheck, SemanticCheckResult, SemanticError, TypeGenerator, ast}
 
 import scala.util.Try
 
