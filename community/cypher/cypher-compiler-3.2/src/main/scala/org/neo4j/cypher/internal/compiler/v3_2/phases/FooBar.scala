@@ -3,10 +3,13 @@ package org.neo4j.cypher.internal.compiler.v3_2.phases
 import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
 
 trait FooTransformer[-C, -S] {
-  def transform[FROM <: S, TO <: FROM](from: FROM, context: C): TO
+  type FROM <: S
+  type TO <: FROM
 
-  def andThen[D <: C, FROM <: S, TO <: FROM, RESULT <: TO](other: FooTransformer[D, TO]): FooTransformer[D, RESULT] =
-    AndThen[D, RESULT](this, other)
+  def transform(from: FROM, context: C): TO
+
+  def andThen[D <: C, FROM2 >: TO](other: FooTransformer[D, FROM2]): FooTransformer[D, S] =
+    AndThen[D, S](this, other)
 }
 
 case class FooIf[C, S](f: S => Boolean)(ifTrue: FooTransformer[C, S], ifFalse: FooTransformer[C, S]) extends FooTransformer[C, S] {

@@ -111,8 +111,10 @@ case class CypherCompiler[Context <: CompilerContext](createExecutionPlan: Trans
     )
 
   val planAndCreateExecPlan: Transformer[Context] =
-    ProcedureCallOrSchemaCommandPlanBuilder andThen
-    If(_.maybeExecutionPlan.isEmpty)(
+    ProcedureCallOrSchemaCommandPlanBuilder andThen // HasStatement => HasStatement with HasExecutionPlan
+    If(_.maybeExecutionPlan.isEmpty)(               // HasStatement with HasExecutionPlan => HasExecutionPlan
+//      ifTrue, HasFoo => HasFoo + HasBlorg           // HasExecutionPlan => HasExecutionPlan
+//      ifFalse,HasFoo => HasFoo + HasBlorg           // HasStatement => HasExecutionPlan
       CompilationPhases.lateAstRewriting andThen
       irConstruction andThen
       costBasedPlanning andThen
